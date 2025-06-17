@@ -42,7 +42,7 @@ class Parser:
                             "imports": [
                                 cls.resolve_import(imp[1], module_name) for imp in c["imports"]
                             ],
-                            "inheritance": [] 
+                            "inherited": c["inherited"]
                         } for c in parsed_python["classes"] 
                     ]
                     module_class_map[module_name]["imports"] =[
@@ -59,7 +59,7 @@ class Parser:
                             "imports": [
                                 cls.resolve_import(imp[1], module_name) for imp in c["imports"]
                             ],
-                            "inheritance": [] 
+                            "inherited": c["inherited"]
                         } for c in parsed_cython["classes"] 
                     ]
                     module_class_map[module_name]["imports"] =[
@@ -80,7 +80,7 @@ class Parser:
         class_pattern = re.compile(r"\s*(cdef\s+)?class\s+(\w+)")
         func_pattern = re.compile(r"\s*(cpdef|def)\s+\w+\s+(\w+)\s*\(")
         import_pattern = re.compile(r"\s*(from\s+[\w.]+\s+)?import\s+.*")
-        cimport_pattern = re.compile(r"\s*from\s+[\w.]+\s+cimport\s+.*")
+        cimport_pattern = re.compile(r"\s*(from\s+[\w.]+\s+)?cimport\s+.*")
 
         with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
             last_class = None
@@ -102,7 +102,8 @@ class Parser:
                         "name": match.group(2),
                         "line": i,
                         "functions": [],
-                        "imports": []
+                        "imports": [],
+                        "inherited": cls.extract_inheritance_from_cython(line)
                     }
                     results["classes"].append(last_class)
 
@@ -163,8 +164,13 @@ class Parser:
                     "name": node.name,
                     "line": node.lineno,
                     "functions": [],
-                    "imports": []
+                    "imports": [],
+                    "inherited": []
                 }
+                for base in node.bases:
+                    base_name = cls.get_full_name(base)
+                    if base_name:
+                        class_entry["inherited"].append(base_name)
 
                 for subnode in ast.walk(node):
                     if isinstance(subnode, ast.FunctionDef):
@@ -186,8 +192,8 @@ class Parser:
         result = {
             "full_module_path": None,
             "classes_imported": [],
-            "as": None,
-            "type": "import"
+            "type": "import",
+            "alias": None
         }
 
         # Handle relative imports: from ..foo import Bar
@@ -270,3 +276,16 @@ class Parser:
         elif isinstance(node, ast.Attribute):
             return cls.get_full_name(node.value) + "." + node.attr
         return None
+    
+    @classmethod
+    def extract_inheritance_from_cython(cls, line: str):
+        results = []
+        class_pattern = re.compile(r"^\s*(cdef\s+)?class\s+(\w+)\s*\((.*?)\)\s*:")
+        match = class_pattern.match(line)
+        if match:
+            base_classes = match.group(3)
+            for base in base_classes.split(","):
+                base = base.strip()
+                if base:
+                    results.append(base)
+        return results
