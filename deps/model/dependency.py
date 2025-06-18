@@ -11,10 +11,8 @@ class Relation:
 class Dependency:
     def __init__(
             self,
-            source: 'SageClass',
             target: 'SageClass',
             relation: Relation
     ):
-        self.dependent = source
         self.target = target
         self.relation = relation

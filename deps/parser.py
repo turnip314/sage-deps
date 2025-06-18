@@ -191,7 +191,7 @@ class Parser:
         """
         result = {
             "full_module_path": None,
-            "classes_imported": [],
+            "classes_imported": [], # {classalias, classname}
             "type": "import",
             "alias": None
         }
@@ -209,65 +209,70 @@ class Parser:
         # Normalize whitespace
         line = import_line.strip()
 
-        # Case 1: from x.y import z or *
+        # === from x.y import A, B as B_alias
         match = re.match(r"from\s+([\w\.]+|(?:\.*[\w\.]*))\s+import\s+(.+)", line)
         if match:
-            module_path = match.group(1)
-            resolved_mod = resolve_relative(module_path)
+            raw_mod = match.group(1)
             imports = match.group(2).strip()
-
+            resolved_mod = resolve_relative(raw_mod)
             result["full_module_path"] = resolved_mod
+            result["type"] = "from-import"
 
             if imports == "*":
-                result["classes_imported"] = ["*"]
+                result["classes_imported"] = "*"
             else:
-                class_names = [s.strip().split(" as ")[0] for s in imports.split(",")]
-                result["classes_imported"] = class_names
-
+                pairs = {}
+                for item in imports.split(","):
+                    parts = item.strip().split(" as ")
+                    name = parts[0].strip()
+                    alias = parts[1].strip() if len(parts) > 1 else name
+                    pairs[alias] = name
+                result["classes_imported"] = pairs
             return result
 
-        # Case 2: import x.y.z [as alias]
+        # === import x.y.z [as alias]
         match = re.match(r"import\s+([\w\.]+)(?:\s+as\s+(\w+))?", line)
         if match:
             module_path = match.group(1)
             alias = match.group(2) or module_path.split(".")[-1]
-
             resolved_mod = resolve_relative(module_path)
             result["full_module_path"] = resolved_mod
+            result["type"] = "import"
             result["alias"] = alias
             return result
 
-        # Case 3. from x.y cimport z
+        # === from x.y cimport A, B as B_alias
         match = re.match(r"from\s+([\w\.]+|(?:\.*[\w\.]*))\s+cimport\s+(.+)", line)
         if match:
             raw_mod = match.group(1)
             imports = match.group(2).strip()
             resolved_mod = resolve_relative(raw_mod)
-
             result["full_module_path"] = resolved_mod
             result["type"] = "cimport"
 
             if imports == "*":
-                result["classes_imported"] = ["*"]
+                result["classes_imported"] = "*"
             else:
-                class_names = [s.strip().split(" as ")[0] for s in imports.split(",")]
-                result["classes_imported"] = class_names
-
+                pairs = {}
+                for item in imports.split(","):
+                    parts = item.strip().split(" as ")
+                    name = parts[0].strip()
+                    alias = parts[1].strip() if len(parts) > 1 else name
+                    pairs[alias] = name
+                result["classes_imported"] = pairs
             return result
 
-        # Case 4. cimport x.y.z
+        # === cimport x.y.z
         match = re.match(r"cimport\s+([\w\.]+)", line)
         if match:
             module_path = match.group(1)
             resolved_mod = resolve_relative(module_path)
-
             result["full_module_path"] = resolved_mod
             result["type"] = "cimport"
-            result["classes_imported"] = None
             result["alias"] = module_path.split(".")[-1]
             return result
 
-        return "ERROR: " + import_line  # not a valid import line
+        return None  # unrecognized import
 
     @classmethod
     def get_full_name(cls, node):

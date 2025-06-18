@@ -12,8 +12,8 @@ class Data:
         cls.modules[full_module_name] = module
 
     @classmethod
-    def add_class(cls, full_path_name: str, classname: str, sageclass: 'SageClass'):
-        cls.classes[full_path_name + "." + classname] = sageclass
+    def add_class(cls, full_path_name: str, sageclass: 'SageClass'):
+        cls.classes[full_path_name] = sageclass
 
     @classmethod
     def get_module(cls, full_module_name: str) -> 'Module':
