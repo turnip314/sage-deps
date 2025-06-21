@@ -66,10 +66,16 @@ class File(Module, Importable):
     def add_full_import(self, file: 'File'):
         self._full_imports.append(file)
 
-    def get_import_map(self) -> dict:
+    def get_import_map(self, visited: set | None = None) -> dict:
+        if visited is None:
+            visited = set()
+        if self in visited:
+            return {}
+        visited.add(self)
+
         import_map = {}
         for file in self._full_imports:
-            import_map.update(file.get_import_map())
+            import_map.update(file.get_import_map(visited))
         
         import_map.update(
             self._imported_classes
@@ -78,7 +84,7 @@ class File(Module, Importable):
         import_map.update(
             {
                 file_alias + "." + sage_class.name  : sage_class
-                for file_alias, file in self._imported_files
+                for file_alias, file in self._imported_files.items()
                 for sage_class in file.get_classes()
             }
         )

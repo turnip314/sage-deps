@@ -13,20 +13,34 @@ def create_module_class_map():
 
 def create_import_map():
     Loader.initialize()
-    import_map = Loader.dump_import_map()
-    for key, value in import_map.items():
-        print(key)
-        print(value)
-        print()
+    import_map = Loader.dump_import_map(split=True)
     with open(IMPORT_MAP_SRC, "w") as f: 
         f.write(json.dumps(import_map, indent=4))
+
+def create_dependencies():
+    Loader.initialize()
+    dependencies_map = Loader.dump_dependencies()
+    dependencies_map_json = json.dumps(dependencies_map, indent=4)
+    with open(DEPENDENCIES_JSON, "w") as f:
+        f.write(dependencies_map_json)
 
 def test_loading():
     Loader.load_all_modules()
     Loader.load_all_classes()
     print(Data.classes)
 
+def testing():
+    Loader.initialize()
+    sc = Data.get_class("sage.homology.chains.Cochains")
+    print(sc._module.full_path_name)
+    print(sc._module._imported_classes)
+    print(sc._module.get_import_map())
+    print(sc._module.get_import_map(visited=set()))
+    print(sc._dependencies)
+
 if __name__ == "__main__":
     #create_module_class_map()
-    create_import_map()
+    #create_import_map()
     #test_loading()
+    create_dependencies()
+    #testing()

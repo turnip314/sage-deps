@@ -6,6 +6,8 @@ if TYPE_CHECKING:
 class Data:
     modules = {}
     classes = {}
+    instantiations = {}
+    aliases = {}
 
     @classmethod
     def add_module(cls, full_module_name: str, module: 'Module'):
@@ -21,4 +23,23 @@ class Data:
 
     @classmethod
     def get_class(cls, full_path_name: str) -> 'SageClass':
-        return cls.classes.get(full_path_name, None)
+        resolved_name = cls.resolve_reference(full_path_name)
+        return cls.classes.get(resolved_name, None)
+    
+    @classmethod
+    def add_instantiation(cls, full_path_name: str, referenced_name: str):
+        cls.instantiations[full_path_name] = referenced_name
+    
+    @classmethod
+    def add_alias(cls, full_path_name: str, referenced_name: str):
+        cls.aliases[full_path_name] = referenced_name
+    
+    @classmethod
+    def resolve_reference(cls, full_path_name: str) -> str:
+        resolved_name = full_path_name
+        while resolved_name in cls.aliases:
+            resolved_name = cls.aliases[resolved_name]
+        if resolved_name in cls.instantiations:
+            resolved_name = cls.instantiations[resolved_name]
+        
+        return resolved_name

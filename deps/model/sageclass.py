@@ -4,14 +4,14 @@ if TYPE_CHECKING:
     from model.module import Module, File
 
 from data import Data
-from model.dependency import Dependency
+from model.dependency import Dependency, Relation
 from model.importable import Importable
 
 
 class SageClass(Importable):
     def __init__(
             self,
-            module: 'Module',
+            module: 'File',
             classname,
             is_abstract,
             is_cython,
@@ -28,9 +28,41 @@ class SageClass(Importable):
 
     def add_dependency(self, dep: Dependency):
         self._dependencies.append(dep)
+
+    def filter_dependencies(self):
+        """
+        Only keep the strongest dependency link for a given targer
+        """
+        filtered_list = []
+        classes = set()
+        self._dependencies.sort(key = lambda dep: dep.relation, reverse=True)
+        dependency: Dependency
+        for dependency in self._dependencies:
+            if dependency.target not in classes:
+                filtered_list.append(dependency)
+                classes.add(dependency.target)
+        
+        self._dependencies = filtered_list
     
-    def to_json(self):
-        raise Exception("Not implemented.")
+    def to_dict(self) -> dict:
+        self_dict = {
+            "dependencies": {
+                "sub-level-import": [
+                    dep.target.full_path_name for dep in self._dependencies if dep.relation == Relation.SUB_METHOD_IMPORT
+                ],
+                "top-level-import": [
+                    dep.target.full_path_name for dep in self._dependencies if dep.relation == Relation.TOP_LEVEL_IMPORT
+                ],
+                "attribute": [
+                    dep.target.full_path_name for dep in self._dependencies if dep.relation == Relation.CLASS_ATTRIBUTE
+                ],
+                "inheritance": [
+                    dep.target.full_path_name for dep in self._dependencies if dep.relation == Relation.INHERITANCE
+                ],
+            }
+        }
+
+        return self_dict
     
     @property
     def name(self):
@@ -71,16 +103,15 @@ class SageClass(Importable):
     def add_full_import(self, file: 'File'):
         self._full_imports.append(file)
 
-    def get_import_map(self) -> dict:
-        import_map = {}
-        for file in self._full_imports:
-            import_map.update(file.get_import_map())
-        
-        import_map.update(
-            self._imported_classes
-        )
+    def get_import_map(self, split_level=False) -> dict | tuple[dict, dict]:
+        class_import_map = {}
 
-        import_map.update(
+        for file in self._full_imports:
+            class_import_map.update(file.get_import_map())
+
+        class_import_map.update(self._imported_classes)
+        
+        class_import_map.update(
             {
                 file_alias + "." + sage_class.name  : sage_class
                 for file_alias, file in self._imported_files.items()
@@ -88,7 +119,18 @@ class SageClass(Importable):
             }
         )
 
-        return import_map
+        top_level_import_map = self._module.get_import_map()
+        top_level_import_map.update(
+            {
+                sage_class.name : sage_class for sage_class in self._module.get_classes()
+            }
+        )
+
+        if split_level:
+            return class_import_map, top_level_import_map
+
+        top_level_import_map.update(class_import_map)
+        return top_level_import_map
 
 class PythonClass(SageClass):
     def __init__(
@@ -98,13 +140,13 @@ class PythonClass(SageClass):
     ):
         super().__init__(module, name, False, False)
 
-    def to_json(self) -> str:
-        self_dict = {}
+    def to_dict(self) -> dict:
+        self_dict = super().to_dict()
         self_dict["name"] = self.name
-        self_dict["module"] = self.module
+        self_dict["module"] = self.module.full_path_name
         self_dict["is_abstract"] = self._is_abstract
         self_dict["type"] = "PythonClass"
-        return json.dumps(self_dict)
+        return self_dict
         
 
 class CythonClass(SageClass):
