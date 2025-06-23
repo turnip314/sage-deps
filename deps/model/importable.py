@@ -15,3 +15,14 @@ class Importable:
     
     def get_import_map(self):
         pass
+
+    @property
+    def full_path_name(self) -> str:
+        pass
+
+    @property
+    def depth(self) -> int:
+        pass
+
+    def __hash__(self) -> int:
+        return hash(self.full_path_name)

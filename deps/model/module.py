@@ -3,13 +3,17 @@ if TYPE_CHECKING:
     from model.sageclass import SageClass
 
 from model.importable import Importable
+from model.dependency import Relation
 
-class Module:
+class Module(Importable):
     def __init__(self, name: str, parent: 'Module'):
         self._parent = parent
         self._name = name
         self._full_name = parent.full_path_name + "." + name if not self.is_root else name
         self._children = []
+
+        # cached variables
+        self._classes = None
 
     @property
     def name(self) -> str:
@@ -26,6 +30,12 @@ class Module:
     @property
     def extension(self) -> str | None:
         return None
+
+    @property
+    def depth(self) -> int:
+        if self._parent is None:
+            return 0
+        return self._parent.depth + 1
     
     def add_child(self, other: 'Module') -> None:
         self._children.append(other)
@@ -33,12 +43,28 @@ class Module:
     def contained_in(self, other: 'Module | None') -> bool:
         if other is None:
             return False
+        if self._parent is None:
+            return False
         return self._parent == other or self._parent.contained_in(other)
 
     def contains(self, other: 'Module'):
         return other.contained_in(self)
+    
+    def get_classes(self):
+        if self._classes is not None:
+            return self._classes
+        self._classes = [sage_class for submodule in self._children for sage_class in submodule.get_classes()]
+        return self.get_classes()
 
-class File(Module, Importable):
+    def depends_on(self, other: 'Module', relations = None):
+        sage_class: SageClass
+        for sage_class in self.get_classes():
+            if sage_class.depends_on(other, relations=relations):
+                return True
+        
+        return False
+
+class File(Module):
     def __init__(self, name: str, parent: 'Module', extension: str):
         super().__init__(name, parent)
         self._extension = extension

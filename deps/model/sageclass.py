@@ -76,15 +76,28 @@ class SageClass(Importable):
     def full_path_name(self):
         return self.module.full_path_name + "." + self.name
 
+    @property
+    def depth(self):
+        return self._module.depth
+
+    def get_dependencies(self) -> list[Dependency]:
+        return self._dependencies
+
     def contained_in(self, other: 'Module'):
         return other == self._module or self._module.contained_in(other)
     
-    def depends_on(self, other: 'SageClass | Module'):
+    def depends_on(self, other: 'SageClass | Module', relations=None):
         from model.module import Module
-        if isinstance(SageClass, other):
-            return any([d.target == other for d in self._dependencies])
-        elif isinstance(Module, other):
-            return any([d.target.contained_in(other) for d in self._dependencies])
+        if isinstance(other, SageClass):
+            return any([
+                d.target == other and (relations is None or d.relation in relations)
+                for d in self._dependencies
+            ])
+        elif isinstance(other, Module):
+            return any([
+                d.target.contained_in(other) and (relations is None or d.relation in relations)
+                for d in self._dependencies
+            ])
     
     @classmethod
     def from_json(cls, json_obj: str):
