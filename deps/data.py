@@ -13,6 +13,8 @@ class Filter:
         self._depth = None
         self._min_depth = None
         self._max_depth = None
+        self._min_in = 0
+        self._min_out = 0
     
     def in_path(self, path: str) -> 'Filter':
         self._in_path = path
@@ -42,6 +44,14 @@ class Filter:
         self._max_depth = depth
         return self
     
+    def min_in(self, num: int) -> 'Filter':
+        self._min_in = num
+        return self
+    
+    def min_out(self, num: int) -> 'Filter':
+        self._min_out = num
+        return self
+    
     def applies_to(self, object: 'Importable') -> bool:
         name = object.full_path_name
         return name.startswith(self._in_path) and \
@@ -49,8 +59,10 @@ class Filter:
             all([x in name for x in self._contains]) and \
             (not any([x in name for x in self._not_contains])) and \
             (self._depth is None or self._depth == object.depth) and \
-            (self._min_depth is None or self._depth <= object.depth) and \
-            (self._max_depth is None or self._depth >= object.depth)
+            (self._min_depth is None or self._min_depth <= object.depth) and \
+            (self._max_depth is None or self._max_depth >= object.depth) and \
+            (object.in_degree >= self._min_in) and \
+            (object.out_degree >= self._min_out) \
 
     def apply(self, objects: list['Importable']):
         return list(filter(

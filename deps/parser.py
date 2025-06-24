@@ -187,6 +187,13 @@ class Parser:
                 code = ast.unparse(node)
                 results["imports"].append((kind, code, node.lineno))
 
+            # Lazy imports: top-level expression calls like lazy_import(...)
+            elif isinstance(node, ast.Expr) and isinstance(node.value, ast.Call):
+                call = node.value
+                if isinstance(call.func, ast.Name) and call.func.id == "lazy_import":
+                    if len(call.args) >= 2:
+                        results["imports"].append(("lazy-import", ast.unparse(node), node.lineno))
+
             # Top-level functions
             elif isinstance(node, ast.FunctionDef):
                 results["functions"].append((node.name, "def", node.lineno))
@@ -305,6 +312,48 @@ class Parser:
             result["full_module_path"] = resolved_mod
             result["type"] = "cimport"
             result["alias"] = module_path.split(".")[-1]
+            return result
+        
+        # === lazy_import("module.path", ..., [as_name="X"] or as_names=(...))
+        lazy_match = re.match(r'lazy_import\(\s*[\'"]([\w\.]+)[\'"]\s*,\s*(.+)', line)
+        if lazy_match:
+            module_path, symbols_raw = lazy_match.groups()
+            resolved_mod = resolve_relative(module_path)
+            symbols = []
+            aliases = []
+
+            # 1. Parse symbol list
+            if symbols_raw.strip().startswith("("):  # multiple symbols
+                symbol_match = re.findall(r'["\'](\w+)["\']', symbols_raw)
+                symbols = symbol_match
+            else:
+                single_match = re.match(r'["\'](\w+)["\']', symbols_raw)
+                if single_match:
+                    symbols = [single_match.group(1)]
+
+            # 2. Parse aliases if present
+            alias_match = re.search(r'as_name\s*=\s*["\'](\w+)["\']', line)
+            if alias_match:
+                aliases = [alias_match.group(1)]
+            else:
+                aliases = re.findall(r'as_names\s*=\s*\((.*?)\)', line)
+                if aliases:
+                    alias_list = re.findall(r'["\'](\w+)["\']', aliases[0])
+                    aliases = alias_list
+
+            # Fallback to identity
+            if not aliases:
+                aliases = symbols
+
+            # Match lengths (defensive)
+            if len(symbols) != len(aliases):
+                print(f"Error parsing lazy import {line}")
+                return None
+            
+            result["full_module_path"] = resolved_mod
+            result["type"] = "lazy-import"
+            result["alias"] = module_path.split(".")[-1]
+            result["classes_imported"] = {alias:symbol for symbol, alias in zip(symbols, aliases)}
             return result
 
         return None  # unrecognized import

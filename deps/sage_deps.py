@@ -4,7 +4,7 @@ from constants import *
 from parser import Parser
 from loader import Loader
 from data import Data
-from analysis import create_class_digraph, create_module_digraph
+from analysis import create_class_digraph, create_module_digraph, create_graph_json
 
 def create_module_class_map():
     class_map = Parser.create_python_module_class_map()
@@ -49,4 +49,6 @@ if __name__ == "__main__":
     #test_loading()
     #create_dependencies()
     #testing()
-    show_graph()
+    #show_graph()
+    Loader.initialize()
+    create_graph_json(min_in = 1, min_out = 1, excludes=["toy", "example", "lazy_import"], min_depth=2, path="sage.rings.")

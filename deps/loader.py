@@ -127,7 +127,7 @@ class Loader:
         for import_dict in import_dicts:
             imported_module = Data.get_module(import_dict["full_module_path"])
             if imported_module is not None and isinstance(imported_module, File):
-                if import_dict["type"] in ["from-import", "from-cimport"]:
+                if import_dict["type"] in ["from-import", "from-cimport", "lazy-import"]:
                     if import_dict["classes_imported"] == "*":
                         object.add_full_import(imported_module)
                         continue
@@ -163,6 +163,7 @@ class Loader:
                     for imported_class in import_map.values():
                         sage_class.add_dependency(
                             Dependency(
+                                source = sage_class,
                                 target = imported_class,
                                 relation = Relation.SUB_METHOD_IMPORT
                             )
@@ -171,6 +172,7 @@ class Loader:
                     for imported_class in file_import_map.values():
                         sage_class.add_dependency(
                             Dependency(
+                                source = sage_class,
                                 target = imported_class,
                                 relation = Relation.TOP_LEVEL_IMPORT
                             )
@@ -183,6 +185,7 @@ class Loader:
                         if inherited_class is not None:
                             sage_class.add_dependency(
                                 Dependency(
+                                    source = sage_class,
                                     target = inherited_class,
                                     relation = Relation.INHERITANCE
                                 )
@@ -193,6 +196,7 @@ class Loader:
                         if attribute_class is not None:
                             sage_class.add_dependency(
                                 Dependency(
+                                    source = sage_class,
                                     target = attribute_class,
                                     relation = Relation.CLASS_ATTRIBUTE
                                 )

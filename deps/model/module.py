@@ -6,7 +6,7 @@ from model.importable import Importable
 from model.dependency import Relation
 
 class Module(Importable):
-    def __init__(self, name: str, parent: 'Module'):
+    def __init__(self, name: str, parent: 'Module | None'):
         self._parent = parent
         self._name = name
         self._full_name = parent.full_path_name + "." + name if not self.is_root else name
@@ -18,6 +18,10 @@ class Module(Importable):
     @property
     def name(self) -> str:
         return self._name
+    
+    @property
+    def parent(self) -> 'Module | None':
+        return self._parent
 
     @property
     def full_path_name(self) -> str:
@@ -63,6 +67,14 @@ class Module(Importable):
                 return True
         
         return False
+    
+    @property
+    def in_degree(self) -> int:
+        return sum([c.in_degree for c in self._children])
+
+    @property
+    def out_degree(self) -> int:
+        return sum([c.out_degree for c in self._children])
 
 class File(Module):
     def __init__(self, name: str, parent: 'Module', extension: str):
@@ -76,6 +88,14 @@ class File(Module):
     @property
     def extension(self) -> str | None:
         return self._extension
+    
+    @property
+    def in_degree(self) -> int:
+        return sum([c.in_degree for c in self._classes])
+
+    @property
+    def out_degree(self) -> int:
+        return sum([c.out_degree for c in self._classes])
     
     def add_class(self, sage_class: 'SageClass'):
         self._classes.append(sage_class)

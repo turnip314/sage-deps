@@ -25,9 +25,14 @@ class SageClass(Importable):
         self._imported_classes = {}
         self._full_imports = []
         self._dependencies = []
+        self._dependents = []
 
     def add_dependency(self, dep: Dependency):
         self._dependencies.append(dep)
+        dep.target.add_dependent(dep)
+    
+    def add_dependent(self, dep: Dependency):
+        self._dependents.append(dep)
 
     def filter_dependencies(self):
         """
@@ -65,19 +70,27 @@ class SageClass(Importable):
         return self_dict
     
     @property
-    def name(self):
+    def in_degree(self) -> int:
+        return len(self._dependents)
+    
+    @property
+    def out_degree(self) -> int:
+        return len(self._dependencies)
+
+    @property
+    def name(self) -> str:
         return self._name
     
     @property
-    def module(self):
+    def module(self) -> 'Module':
         return self._module
     
     @property
-    def full_path_name(self):
+    def full_path_name(self) -> str:
         return self.module.full_path_name + "." + self.name
 
     @property
-    def depth(self):
+    def depth(self) -> int:
         return self._module.depth
 
     def get_dependencies(self) -> list[Dependency]:

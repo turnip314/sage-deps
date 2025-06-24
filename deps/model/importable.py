@@ -13,7 +13,7 @@ class Importable:
     def add_full_import(self, file: 'File'):
         pass
     
-    def get_import_map(self):
+    def get_import_map(self) -> dict:
         pass
 
     @property
@@ -23,6 +23,14 @@ class Importable:
     @property
     def depth(self) -> int:
         pass
+
+    @property
+    def in_degree(self) -> int:
+        return 0
+    
+    @property
+    def out_degree(self) -> int:
+        return 0
 
     def __hash__(self) -> int:
         return hash(self.full_path_name)

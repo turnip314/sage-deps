@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Sage Dependency Graph</title>
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+    }
+    #cy {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+  </style>
+  <!-- Load Cytoscape.js -->
+  <script src="https://unpkg.com/cytoscape@3.24.0/dist/cytoscape.min.js"></script>
+</head>
+<body>
+  <div id="cy"></div>
+
+  <script>
+    // Load JSON from external file
+    fetch("graph.json")
+      .then(res => res.json())
+      .then(data => {
+        console.log("Loading...")
+        const cy = cytoscape({
+          container: document.getElementById('cy'),
+          elements: data.elements,
+
+          layout: {
+            name: 'cose', // Try 'breadthfirst', 'dagre', 'grid' if preferred
+            animate: false
+          },
+
+          style: [
+            {
+              selector: 'node',
+              style: {
+                'label': 'data(label)',
+                'text-valign': 'center',
+                'text-halign': 'center',
+                'width': 'label',
+                'height': 'label',
+                'padding': 10,
+                'shape': 'roundrectangle',
+                'background-color': '#888'
+              }
+            },
+            {
+              selector: 'node.class',
+              style: { 'background-color': '#1f77b4', 'color': 'white' }
+            },
+            {
+              selector: 'node.module',
+              style: { 
+                'background-color': '#2ca02c', 'color': 'white',
+                'display': 'none'
+              }
+            },
+            {
+              selector: 'node.file',
+              style: { 
+                'background-color': '#ff7f0e', 'color': 'white' 
+              }
+            },
+            {
+              selector: 'edge',
+              style: {
+                'width': 2,
+                'line-color': '#ccc',
+                'target-arrow-color': '#ccc',
+                'target-arrow-shape': 'triangle',
+                'curve-style': 'bezier',
+                'label': 'data(type)',
+                'font-size': 10,
+                'text-rotation': 'autorotate'
+              }
+            }
+          ]
+        });
+        cy.on("layoutstop", () => {
+          console.log("Graph fully loaded and laid out.");
+        });
+      });
+  </script>
+</body>
+</html>
