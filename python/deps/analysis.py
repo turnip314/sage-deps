@@ -98,7 +98,7 @@ def create_graph_json(
             "type": "file" if isinstance(module, File) else "module",
             "score": 100
         }
-        if module.parent is not None:
+        if module.parent is not None and module.parent in modules:
             data["parent"] = module.parent.full_path_name
         result["elements"]["nodes"].append({
             "data": data,
@@ -107,15 +107,18 @@ def create_graph_json(
 
     sage_class: SageClass
     for sage_class in classes:
+        data = {
+            "id": sage_class.full_path_name,
+            "label": sage_class.full_path_name,
+            "type": "class",
+            "score": default_score(sage_class)
+        }
+        if sage_class.module in modules:
+            data["parent"] = sage_class.module.full_path_name
+
         result["elements"]["nodes"].append(
             {
-                "data": {
-                    "id": sage_class.full_path_name,
-                    "label": sage_class.full_path_name,
-                    "type": "class",
-                    "parent":sage_class.module.full_path_name,
-                    "score": default_score(sage_class)
-                },
+                "data": data,
                 "classes": "class"
             }
         )
