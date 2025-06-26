@@ -14,166 +14,230 @@
   </style>
 </head>
 <body>
+  <div style="padding: 10px; background: #222; color: white; font-family: sans-serif;">
+    <label for="filter-type">Filter:</label>
+    <select id="filter-type">
+      <option value="node">Node</option>
+      <option value="edge">Edge</option>
+    </select>
+  
+    <select id="filter-field">
+      <option value="type">type</option>
+      <option value="score">score</option>
+      <option value="label">label</option>
+    </select>
+  
+    <select id="filter-op">
+      <option value="equals">equals</option>
+      <option value="contains">contains</option>
+      <option value="gte">≥</option>
+      <option value="lte">≤</option>
+    </select>
+  
+    <input id="filter-value" placeholder="value" style="width: 100px;" />
+  
+    <button onclick="applyFilter()">Apply Filter</button>
+    <button onclick="resetFilter()">Reset</button>
+  </div>
+
   <div id="cy"></div>
 
   <script>
-    // Load your JSON data
+    const cy = cytoscape({
+      container: document.getElementById('cy'),
+      //elements: data.elements,
+      style: [
+        {
+          selector: 'node',
+          style: {
+            'label': 'data(id)',
+            'background-color': '#29b6f6',
+            'text-valign': 'center',
+            'text-halign': 'center',
+            'color': '#fff',
+            'font-size': '10px'
+          }
+        },
+        {
+          selector: ':parent',
+          style: {
+            'background-color': '#455a64',
+            'text-valign': 'top',
+            'padding': 10,
+            'font-size': '12px'
+          }
+        },
+        {
+          selector: 'edge',
+          style: {
+            'width': 2,
+            'line-color': '#ccc',
+            'target-arrow-shape': 'triangle',
+            'target-arrow-color': '#ccc',
+            'curve-style': 'bezier',
+            'label': 'data(label)',
+            'font-size': '8px',
+            'color': '#aaa'
+          }
+        }
+      ],
+    });
+
+    const collapsedModules = new Set();
+
+    function collapseModule(moduleId) {
+      const childNodes = cy.nodes(`[parent = "${moduleId}"]`);
+      const childNodeIds = childNodes.map(n => n.id());
+
+      // Collapse nested modules first
+      childNodes.forEach(child => {
+        if (child.isParent()) {
+          collapseModule(child.id());
+        }
+      });
+
+      const externalIncoming = cy.edges().filter(edge =>
+        childNodeIds.includes(edge.data('target')) &&
+        !childNodeIds.includes(edge.data('source'))
+      );
+
+      const externalOutgoing = cy.edges().filter(edge =>
+        childNodeIds.includes(edge.data('source')) &&
+        !childNodeIds.includes(edge.data('target'))
+      );
+
+      // Hide children and edges
+      childNodes.forEach(n => n.hide());
+      // Hide internal edges
+      cy.edges().forEach(e => {
+        const src = e.data('source');
+        const tgt = e.data('target');
+        if (childNodeIds.includes(src) || childNodeIds.includes(tgt)) {
+          e.hide();
+        }
+      });
+
+      // Super-edges
+      externalIncoming.forEach(edge => {
+        const superId = `super_in_${edge.data('source')}_${moduleId}`;
+        if (cy.getElementById(superId).length === 0) {
+          cy.add({
+            group: 'edges',
+            data: {
+              id: superId,
+              source: edge.data('source'),
+              target: moduleId,
+              label: '↳'
+            }
+          });
+        }
+      });
+
+      externalOutgoing.forEach(edge => {
+        const superId = `super_out_${moduleId}_${edge.data('target')}`;
+        if (cy.getElementById(superId).length === 0) {
+          cy.add({
+            group: 'edges',
+            data: {
+              id: superId,
+              source: moduleId,
+              target: edge.data('target'),
+              label: '↱'
+            }
+          });
+        }
+      });
+
+      collapsedModules.add(moduleId);
+    }
+
+    function expandModule(moduleId) {
+      const childNodes = cy.nodes(`[parent = "${moduleId}"]`);
+      const childNodeIds = childNodes.map(n => n.id());
+
+      /**
+      childNodes.forEach(child => {
+        if (child.isParent() && collapsedModules.has(child.id())) {
+          expandModule(child.id());
+        }
+      });*/
+
+      // Remove super-edges
+      cy.edges(`[id ^= "super_in_"][target = "${moduleId}"]`).remove();
+      cy.edges(`[id ^= "super_out_${moduleId}_"]`).remove();
+
+      // Show original nodes and edges
+      childNodes.forEach(n => n.show());
+      cy.edges().forEach(e => {
+        if (childNodeIds.includes(e.data('source')) || childNodeIds.includes(e.data('target'))) {
+          e.show();
+        }
+      });
+
+      collapsedModules.delete(moduleId);
+    }
+
+    function collapseAllModules() {
+      const allModules = cy.nodes().filter(n => n.isParent());
+      //const sortedModules = allModules.sort((a, b) => b.depth() - a.depth());
+      allModules.forEach(module => collapseModule(module.id()));
+    }
+
+    // Toggle modules on click
+    cy.on('tap', 'node', function(evt) {
+      const node = evt.target;
+      if (!node.isParent()) return;
+
+      const moduleId = node.id();
+      if (collapsedModules.has(moduleId)) {
+        expandModule(moduleId);
+      } else {
+        collapseModule(moduleId);
+      }
+    });
+
+    function applyFilter() {
+      const kind = document.getElementById("filter-type").value;
+      const field = document.getElementById("filter-field").value;
+      const op = document.getElementById("filter-op").value;
+      const val = document.getElementById("filter-value").value;
+
+      const elements = kind === "node" ? cy.nodes(':visible') : cy.edges(':visible');
+
+      elements.forEach(el => {
+        const data = el.data();
+        const targetVal = data[field];
+
+        let match = false;
+        if (op === "equals") {
+          match = targetVal == val;
+        } else if (op === "contains") {
+          match = (targetVal + "").includes(val);
+        } else if (op === "gte") {
+          match = parseFloat(targetVal) >= parseFloat(val);
+        } else if (op === "lte") {
+          match = parseFloat(targetVal) <= parseFloat(val);
+        }
+
+        if (match) {
+          el.show();
+        } else {
+          el.hide();
+        }
+      });
+    }
+
+    function resetFilter() {
+      cy.nodes().forEach(n => n.show());
+      cy.edges().forEach(e => e.show());
+      collapseAllModules();
+    }
+      // Load your JSON data
     fetch("graph.json")
       .then(res => res.json())
       .then(data => {
         console.log("Data loaded")
-        const cy = cytoscape({
-          container: document.getElementById('cy'),
-          //elements: data.elements,
-          style: [
-            {
-              selector: 'node',
-              style: {
-                'label': 'data(id)',
-                'background-color': '#29b6f6',
-                'text-valign': 'center',
-                'text-halign': 'center',
-                'color': '#fff',
-                'font-size': '10px'
-              }
-            },
-            {
-              selector: ':parent',
-              style: {
-                'background-color': '#455a64',
-                'text-valign': 'top',
-                'padding': 10,
-                'font-size': '12px'
-              }
-            },
-            {
-              selector: 'edge',
-              style: {
-                'width': 2,
-                'line-color': '#ccc',
-                'target-arrow-shape': 'triangle',
-                'target-arrow-color': '#ccc',
-                'curve-style': 'bezier',
-                'label': 'data(label)',
-                'font-size': '8px',
-                'color': '#aaa'
-              }
-            }
-          ],
-        });
-
         cy.add(data.elements)
-
-        console.log("cy initialized")
-
-        const collapsedModules = new Set();
-
-        function collapseModule(moduleId) {
-          const childNodes = cy.nodes(`[parent = "${moduleId}"]`);
-          const childNodeIds = childNodes.map(n => n.id());
-
-          // Collapse nested modules first
-          childNodes.forEach(child => {
-            if (child.isParent()) {
-              collapseModule(child.id());
-            }
-          });
-
-          const externalIncoming = cy.edges().filter(edge =>
-            childNodeIds.includes(edge.data('target')) &&
-            !childNodeIds.includes(edge.data('source'))
-          );
-
-          const externalOutgoing = cy.edges().filter(edge =>
-            childNodeIds.includes(edge.data('source')) &&
-            !childNodeIds.includes(edge.data('target'))
-          );
-
-          // Hide children and edges
-          childNodes.forEach(n => n.hide());
-          cy.edges().forEach(e => {
-            if (childNodeIds.includes(e.data('source')) || childNodeIds.includes(e.data('target'))) {
-              e.hide();
-            }
-          });
-
-          // Super-edges
-          externalIncoming.forEach(edge => {
-            const superId = `super_in_${edge.data('source')}_${moduleId}`;
-            if (cy.getElementById(superId).length === 0) {
-              cy.add({
-                group: 'edges',
-                data: {
-                  id: superId,
-                  source: edge.data('source'),
-                  target: moduleId,
-                  label: '↳'
-                }
-              });
-            }
-          });
-
-          externalOutgoing.forEach(edge => {
-            const superId = `super_out_${moduleId}_${edge.data('target')}`;
-            if (cy.getElementById(superId).length === 0) {
-              cy.add({
-                group: 'edges',
-                data: {
-                  id: superId,
-                  source: moduleId,
-                  target: edge.data('target'),
-                  label: '↱'
-                }
-              });
-            }
-          });
-
-          collapsedModules.add(moduleId);
-        }
-
-        function expandModule(moduleId) {
-          const childNodes = cy.nodes(`[parent = "${moduleId}"]`);
-          const childNodeIds = childNodes.map(n => n.id());
-
-          childNodes.forEach(child => {
-            if (child.isParent() && collapsedModules.has(child.id())) {
-              expandModule(child.id());
-            }
-          });
-
-          // Remove super-edges
-          cy.edges(`[id ^= "super_in_"][target = "${moduleId}"]`).remove();
-          cy.edges(`[id ^= "super_out_${moduleId}_"]`).remove();
-
-          // Show original nodes and edges
-          childNodes.forEach(n => n.show());
-          cy.edges().forEach(e => {
-            if (childNodeIds.includes(e.data('source')) || childNodeIds.includes(e.data('target'))) {
-              e.show();
-            }
-          });
-
-          collapsedModules.delete(moduleId);
-        }
-
-        function collapseAllModules() {
-          const allModules = cy.nodes().filter(n => n.isParent());
-          //const sortedModules = allModules.sort((a, b) => b.depth() - a.depth());
-          allModules.forEach(module => collapseModule(module.id()));
-        }
-
-        // Toggle modules on click
-        cy.on('tap', 'node', function(evt) {
-          const node = evt.target;
-          if (!node.isParent()) return;
-
-          const moduleId = node.id();
-          if (collapsedModules.has(moduleId)) {
-            expandModule(moduleId);
-          } else {
-            collapseModule(moduleId);
-          }
-        });
 
         const layout = cy.layout({
           name: 'breadthfirst',
@@ -187,7 +251,9 @@
         });
 
         layout.run();
-      });
+
+        console.log("cy initialized")
+      })
   </script>
 </body>
 </html>
