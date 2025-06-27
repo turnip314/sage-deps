@@ -26,6 +26,7 @@ class SageClass(Importable):
         self._full_imports = []
         self._dependencies = []
         self._dependents = []
+        self._score = 0
 
     def add_dependency(self, dep: Dependency):
         self._dependencies.append(dep)

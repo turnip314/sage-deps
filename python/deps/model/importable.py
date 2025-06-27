@@ -31,6 +31,13 @@ class Importable:
     @property
     def out_degree(self) -> int:
         return 0
+    
+    @property
+    def get_score(self) -> int:
+        return self._score
+    
+    def set_score(self, score: int):
+        self._score = score
 
     def __hash__(self) -> int:
         return hash(self.full_path_name)

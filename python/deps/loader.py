@@ -10,12 +10,14 @@ from deps.data import Data
 
 class Loader:
     @classmethod
-    def initialize(cls):
+    def initialize(cls, scorer = None):
         cls.load_all_modules()
         cls.load_all_classes()
         cls.load_all_instantiations()
         cls.build_import_relations()
         cls.create_dependencies()
+        if scorer:
+            scorer()
 
     @classmethod
     def load_all_modules(cls):

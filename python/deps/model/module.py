@@ -1,6 +1,7 @@
 from typing import TYPE_CHECKING, List
 if TYPE_CHECKING:
     from deps.model.sageclass import SageClass
+    from typing import List
 
 from deps.model.importable import Importable
 
@@ -10,6 +11,7 @@ class Module(Importable):
         self._name = name
         self._full_name = parent.full_path_name + "." + name if not self.is_root else name
         self._children = []
+        self._score = 0
 
         # cached variables
         self._classes = None
@@ -53,7 +55,7 @@ class Module(Importable):
     def contains(self, other: 'Module'):
         return other.contained_in(self)
     
-    def get_classes(self):
+    def get_classes(self) -> 'List[SageClass]':
         if self._classes is not None:
             return self._classes
         self._classes = [sage_class for submodule in self._children for sage_class in submodule.get_classes()]
@@ -111,7 +113,7 @@ class File(Module):
     def add_full_import(self, file: 'File'):
         self._full_imports.append(file)
 
-    def get_import_map(self, visited: set | None = None) -> dict:
+    def get_import_map(self, visited: set | None = None) -> dict[str, Importable]:
         if visited is None:
             visited = set()
         if self in visited:
