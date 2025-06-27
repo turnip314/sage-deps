@@ -16,8 +16,10 @@ class Loader:
         cls.load_all_instantiations()
         cls.build_import_relations()
         cls.create_dependencies()
+        cls.load_commit_metadata()
+        cls.parse_rst_content()
         if scorer:
-            scorer()
+            scorer.run()
 
     @classmethod
     def load_all_modules(cls):
@@ -207,9 +209,95 @@ class Loader:
         for sage_class in Data.classes.values():
             sage_class.filter_dependencies()
 
+    @classmethod
+    def load_commit_metadata(cls):
+        def process_path_name(path_name):
+            return ".".join(path_name.split(".")[0].split("/")[1:])
+
+        with open(COMMIT_METADATA) as f:
+            commit_metadata_raw = json.loads(f.read())
+            commit_metadata = {
+                process_path_name(key) : value for key, value in commit_metadata_raw.items()
+            }
+
+        Data.set_commit_metadata(commit_metadata)
+
+    @classmethod
+    def collect_all_rst_files(cls, section_path):
+        """
+        Recursively collect all .rst files included in this reference section.
+        """
+        visited = set()
+        pending = ["index.rst"]
+        all_rst_paths = []
+
+        while pending:
+            rel_path = pending.pop()
+            rst_path = section_path / rel_path
+            if rst_path in visited or not rst_path.exists():
+                continue
+            visited.add(rst_path)
+            all_rst_paths.append(rst_path)
+
+            # Scan for nested toctree includes
+            with rst_path.open() as f:
+                for line in f:
+                    line = line.strip()
+                    if not line or line.startswith("..") or line.startswith(":"):
+                        continue
+                    if not line.endswith(".rst"):
+                        line += ".rst"
+                    candidate = (section_path / line).resolve()
+                    if candidate.exists():
+                        pending.append(candidate.relative_to(section_path))
+
+        return all_rst_paths
     
     @classmethod
+    def parse_rst_content(cls):
+        result = {}
+        for section in Path(LOCAL_DOC_ROOT).iterdir():
+            index = section / "index.rst"
+            if not index.exists():
+                continue
+            result[section.name] = ""
+            rst_files = cls.collect_all_rst_files(section)
+            for rst_file in rst_files:
+                content = rst_file.read_text()
+                result[section.name] += "\n" + content
+        
+        Data.set_rst_content(result)
+
+    @classmethod
+    def get_doc_urls(cls, sage_class: SageClass):
+        """
+        Given a fully-qualified Sage module path, return a list of documentation URLs
+        for each reference section that includes the module.
+        """
+        matches = []
+        module_path = sage_class.module.full_path_name
+        html_path = module_path.replace(".", "/") + ".html"
+        for reference in Data.get_rst_references(module_path):
+            full_url = f"{DOC_BASE_URL}/{reference}/{html_path}#{module_path}"
+            matches.append(full_url)
+
+        return matches
+
+    @classmethod
     def dump_import_map(cls, split=False):
+        """
+        Dumps the currently loaded import map as a dict of the form
+        {
+            "<sage-full-class-path>": {
+                "class-imports": {
+                    ...
+                },
+                "top-level-imports": {
+                    ...
+                }
+            }
+        }
+        """
         result = {}
         with open(MODULE_JSON_SRC) as f:
             modules_dict = json.loads(f.read())

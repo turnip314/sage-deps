@@ -3,6 +3,7 @@ from deps.data import Data, Filter
 from deps.model.dependency import Dependency, Relation
 from deps.model.module import Module, File
 from deps.model.sageclass import SageClass
+from deps.loader import Loader
 
 import json
 import networkx as nx
@@ -60,9 +61,6 @@ def create_module_digraph(depth=3, path="sage", relations=None):
     
     return G
 
-def default_score(sage_class: SageClass):
-    return sage_class.in_degree + sage_class.out_degree
-
 def create_graph_json(
         depth = None,
         min_depth = None,
@@ -94,7 +92,7 @@ def create_graph_json(
     for module in modules:
         data = {
             "id": module.full_path_name,
-            "label": module.full_path_name,
+            "label": module.name,
             "type": "file" if isinstance(module, File) else "module",
             "score": module.get_score
         }
@@ -109,12 +107,14 @@ def create_graph_json(
     for sage_class in classes:
         data = {
             "id": sage_class.full_path_name,
-            "label": sage_class.full_path_name,
+            "label": sage_class.name,
             "type": "class",
             "score": sage_class.get_score
         }
         if sage_class.module in modules:
             data["parent"] = sage_class.module.full_path_name
+        
+        data["urls"] = Loader.get_doc_urls(sage_class)
 
         result["elements"]["nodes"].append(
             {
@@ -122,6 +122,7 @@ def create_graph_json(
                 "classes": "class"
             }
         )
+
 
         dep: Dependency
         for dep in sage_class.get_dependencies():

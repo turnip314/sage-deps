@@ -13,3 +13,5 @@ DEPENDENCIES_JSON = os.getenv("DEPENDENCIES_JSON")
 GRAPH_JSON = os.getenv("GRAPH_JSON")
 COMMIT_HISTORY = os.getenv("COMMIT_HISTORY")
 COMMIT_METADATA = os.getenv("COMMIT_METADATA")
+LOCAL_DOC_ROOT = os.getenv("LOCAL_DOC_ROOT")
+DOC_BASE_URL = "https://doc.sagemath.org/html/en/reference"

@@ -75,6 +75,8 @@ class Data:
     classes = {}
     instantiations = {}
     aliases = {}
+    commit_metadata = {}
+    rst_content = {}
 
     @classmethod
     def add_module(cls, full_module_name: str, module: 'Module'):
@@ -118,3 +120,23 @@ class Data:
     @classmethod
     def get_modules_filtered(cls, filter: Filter):
         return filter.apply(cls.modules.values())
+
+    @classmethod
+    def set_commit_metadata(cls, metadata: dict):
+        cls.commit_metadata = metadata
+    
+    @classmethod
+    def get_commit_metadata(cls, full_path_name: str) -> dict:
+        resolved_name = cls.resolve_reference(full_path_name)
+        return cls.commit_metadata.get(resolved_name, None)
+
+    @classmethod
+    def set_rst_content(cls, content: dict):
+        cls.rst_content = content
+    
+    @classmethod
+    def get_rst_references(cls, full_path_name: str):
+        resolved_name = cls.resolve_reference(full_path_name).replace(".", "/")
+        return [
+            reference for reference, content in cls.rst_content.items() if resolved_name in content
+        ]

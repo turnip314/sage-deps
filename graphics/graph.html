@@ -63,6 +63,7 @@
 
   <div id="side-panel">
     <button onclick="closePanel()">X</button>
+    <p></p>
     <h2 id="panel-title"></h2>
     <p><span class="label">Type:</span> <span id="panel-type"></span></p>
     <p><span class="label">Score:</span> <span id="panel-score"></span></p>
@@ -74,7 +75,7 @@
   <script>
     const settings = {
       minScore: 100,
-      path: "sage",
+      path: "sage.rings",
       edgeTypes: new Set([0,1,2,3])
     }
 
@@ -155,7 +156,7 @@
                     !isAncestor(source.id(), target.id()) && 
                     !isAncestor(target.id(), source.id())
                   ) {
-                    const superId = `${source.id()}_${target.id()}`;
+                    const superId = `${source.id()}-${target.id()}`;
                     let superEdge = cy.getElementById(superId);
                     if (superEdge.length === 0) {
                       superEdge = cy.add({
@@ -194,6 +195,10 @@
       });
     }
 
+    /***
+     * Recursively collapses a module and all descendents.
+     * Typically called as a subroutine of collapseModule and collapseAllmodules
+     */
     function collapseRecursive(subModuleId) {
       //if (collapsedModules.has(subModuleId)) return;
       collapsedModules.add(subModuleId);
@@ -211,11 +216,17 @@
       childNodes.forEach(n => n.hide());
     }
 
+    /***
+     * Collapses a module and updates edge visibility
+     */
     function collapseModule(moduleId) {
       collapseRecursive(moduleId);
       showVisibleEdges();
     }
 
+    /***
+     * Expands a module and, if applicable, all ancestor modules
+     */
     function expandModule(moduleId) {
       // Recursively expand parent modules
       const module = cy.getElementById(moduleId);
@@ -231,15 +242,23 @@
       showVisibleEdges();
     }
 
+    /***
+     * Collapses all modules but does not update edge visibility status 
+     * (this needs to be done manually)
+     */
     function collapseAllModules() {
       const allModules = cy.nodes().filter(n => n.isParent());
       allModules.forEach(module => collapseRecursive(module.id()));
     }
 
+    /***
+     * Takes a json of node and edge data and returns a filtered set of data
+     */
     function getFilteredElements(data, settings) {
       const nodes = data.elements.nodes.filter(
         node =>
-        node.data.score > settings.minScore
+        node.data.score > settings.minScore &&
+        node.data.id.startsWith(settings.path)
       );
       const nodeIds = nodes.map(node => node.data.id);
       
@@ -258,8 +277,14 @@
       };
     }
 
+    /*
+      Obtains filter settings input by the user and updates the "filter" object
+      Loads and removes relevant nodes and edges
+      Collapses all modules
+    */
     function applyFilter() {
-      settings.minScore = parseInt(document.getElementById("filter-min-score").value, 100);
+      settings.minScore = parseFloat(document.getElementById("filter-min-score").value, 100);
+      settings.path = document.getElementById("filter-path").value
       return fetch("graph.json")
       .then(res => res.json())
       .then(data => {
@@ -312,7 +337,6 @@
 
           cy.once('layoutstop', () => {
             createSuperEdges();
-            
             collapseAllModules();
             showVisibleEdges();
           });
@@ -320,46 +344,61 @@
           layout.run();
         });
       })
-        
     }
 
+    /* 
+    Sets filter back to default settings
+    TODO - does not currently work
+    */
     function resetFilter() {
       settings.minScore = 100;
+      settings.path = "sage.rings"
       applyFilter().then(() => {
         collapseAllModules();
       });
     }
 
-    function showSidePanel({ label, type, score, fqname }) {
+    /*
+    Displays side panel with metadata information about the selected node
+    */
+    function showSidePanel(label, type, score, fqname, urls ) {
       const panel = document.getElementById("side-panel");
       document.getElementById("panel-title").textContent = label || fqname;
       document.getElementById("panel-type").textContent = type || "unknown";
       document.getElementById("panel-score").textContent = score ?? "n/a";
 
-      /*const { primary, fallback } = "test" //getDocLink(fqname);
       const docLink = document.getElementById("panel-doc");
-
-      // Try optimistic guess
-      fetch(primary, { method: "HEAD" }).then(res => {
-        docLink.href = res.ok ? primary : fallback;
-      }).catch(() => {
-        docLink.href = fallback;
-      });*/
+      docLink.textContent = "Loading";
+      if (urls)  {
+        docLink.textContent = urls[0];
+        docLink.href = urls[0];
+      }
+      else {
+        docLink.textContent = "Could not find documentation.";
+        docLink.removeAttribute("href");
+      }
 
       panel.style.display = "block";
     }
 
+    /*
+    Hides the side panel.
+    */
     function closePanel() {
       const panel = document.getElementById("side-panel");
       panel.style.display = "none";
     }
 
 
-    // Toggle modules on click
+    /*
+    Toggle modules on click
+    */
     cy.on('tap', 'node', function(evt) {
       const node = evt.target;
       if (!node.isParent()) {
-        showSidePanel("test", "test", "test", "test");
+        console.log(node);
+        console.log(node.data());
+        showSidePanel(node.data('label'), node.data('type'), node.data('score'), node.id(), node.data('urls'));
         return;
       }
 
@@ -371,7 +410,10 @@
       }
     });
 
-    // Load your JSON data
+    /*
+    Initial fetch based on default filter settings. 
+    Loads and renders the nodes and edges in collapsed form.
+    */
     fetch("graph.json")
       .then(res => res.json())
       .then(data => {
