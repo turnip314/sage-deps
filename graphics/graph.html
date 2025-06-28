@@ -73,12 +73,18 @@
   <div id="cy"></div>
 
   <script>
+    /***
+     * Filter settings.
+     */
     const settings = {
       minScore: 100,
       path: "sage.rings",
       edgeTypes: new Set([0,1,2,3])
     }
 
+    /***
+     * Create cytoscape instance.
+     */
     const cy = cytoscape({
       container: document.getElementById('cy'),
       //elements: data.elements,
@@ -119,8 +125,14 @@
       ],
     });
 
+    /***
+     * Keeps track of modules that have been collapsed.
+     */
     const collapsedModules = new Set();
 
+    /***
+     * Determines if node with id `ancestorId` is an ancestor of node `nodeId`.
+     */
     function isAncestor(ancestorId, nodeId) {
       let current = cy.getElementById(nodeId);
       while (current.data('parent')) {
@@ -141,6 +153,9 @@
       return ancestors
     }
 
+    /***
+     * Create edges between modules whose children have edges going between them.
+     */
     function createSuperEdges() {
       cy.edges().forEach(
         edge => {
@@ -181,6 +196,10 @@
       )
     }
 
+    /***
+     * Updates the visibility of all edges by determining if its end nodes are visible,
+     * and if they are leaf nodes or collapsed modules.
+     */
     function showVisibleEdges() {
       cy.edges().forEach( edge => {
         const sourceNode = cy.getElementById(edge.data('source'));
@@ -197,7 +216,7 @@
 
     /***
      * Recursively collapses a module and all descendents.
-     * Typically called as a subroutine of collapseModule and collapseAllmodules
+     * Typically called as a subroutine of collapseModule and collapseAllmodules.
      */
     function collapseRecursive(subModuleId) {
       //if (collapsedModules.has(subModuleId)) return;
@@ -217,7 +236,7 @@
     }
 
     /***
-     * Collapses a module and updates edge visibility
+     * Collapses a module and updates edge visibility.
      */
     function collapseModule(moduleId) {
       collapseRecursive(moduleId);
@@ -225,7 +244,7 @@
     }
 
     /***
-     * Expands a module and, if applicable, all ancestor modules
+     * Expands a module and, if applicable, all ancestor modules.
      */
     function expandModule(moduleId) {
       // Recursively expand parent modules
@@ -243,8 +262,8 @@
     }
 
     /***
-     * Collapses all modules but does not update edge visibility status 
-     * (this needs to be done manually)
+     * Collapses all modules but does not update edge visibility status .
+     * Visibility status needs to be done separately.
      */
     function collapseAllModules() {
       const allModules = cy.nodes().filter(n => n.isParent());
@@ -252,7 +271,7 @@
     }
 
     /***
-     * Takes a json of node and edge data and returns a filtered set of data
+     * Takes a json of node and edge data and returns a filtered set of data.
      */
     function getFilteredElements(data, settings) {
       const nodes = data.elements.nodes.filter(
@@ -277,11 +296,11 @@
       };
     }
 
-    /*
-      Obtains filter settings input by the user and updates the "filter" object
-      Loads and removes relevant nodes and edges
-      Collapses all modules
-    */
+    /***
+     * Obtains filter settings input by the user and updates the "filter" object.
+     * Loads and removes relevant nodes and edges.
+     * Collapses all modules.
+     */
     function applyFilter() {
       settings.minScore = parseFloat(document.getElementById("filter-min-score").value, 100);
       settings.path = document.getElementById("filter-path").value
@@ -346,10 +365,10 @@
       })
     }
 
-    /* 
-    Sets filter back to default settings
-    TODO - does not currently work
-    */
+    /***
+     * Sets filter back to default settings
+     * TODO - does not currently work
+     */
     function resetFilter() {
       settings.minScore = 100;
       settings.path = "sage.rings"
@@ -358,9 +377,9 @@
       });
     }
 
-    /*
-    Displays side panel with metadata information about the selected node
-    */
+    /***
+     * Displays side panel with metadata information about the selected node
+     */
     function showSidePanel(label, type, score, fqname, urls ) {
       const panel = document.getElementById("side-panel");
       document.getElementById("panel-title").textContent = label || fqname;
@@ -381,18 +400,18 @@
       panel.style.display = "block";
     }
 
-    /*
-    Hides the side panel.
-    */
+    /***
+     * Hides the side panel.
+     */
     function closePanel() {
       const panel = document.getElementById("side-panel");
       panel.style.display = "none";
     }
 
 
-    /*
-    Toggle modules on click
-    */
+    /***
+     * Toggle modules and nodes on click.
+     */
     cy.on('tap', 'node', function(evt) {
       const node = evt.target;
       if (!node.isParent()) {
@@ -410,10 +429,10 @@
       }
     });
 
-    /*
-    Initial fetch based on default filter settings. 
-    Loads and renders the nodes and edges in collapsed form.
-    */
+    /***
+     * Initial fetch based on default filter settings. 
+     * Loads and renders the nodes and edges in collapsed form.
+     */
     fetch("graph.json")
       .then(res => res.json())
       .then(data => {
