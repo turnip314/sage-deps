@@ -1,13 +1,13 @@
 import json
 
 from constants import *
-from deps.data import Filter
 from deps.model.module import File, Module
 from deps.parser import Parser
 from deps.loader import Loader
 from deps.data import Data
 from deps.graphics import create_class_digraph, create_module_digraph, create_graph_json
 from deps.score import DefaultScorer
+from deps.filter import PathFilter, MinFanIn, MinFanOut, Or, Not, NameContains, ScoreFilter, Balance
 
 def create_module_class_map():
     class_map = Parser.create_python_module_class_map()
@@ -37,14 +37,29 @@ def test_loading():
     Loader.load_all_classes()
     print(Data.classes)
 
-def testing():
-    Loader.initialize()
-    sc = Data.get_class("sage.homology.chains.Cochains")
-    print(sc._module.full_path_name)
-    print(sc._module._imported_classes)
-    print(sc._module.get_import_map())
-    print(sc._module.get_import_map(visited=set()))
-    print(sc._dependencies)
+def generate_graph():
+    general_filter = MinFanOut(1).add(MinFanIn(1)).add(
+        Not(
+            NameContains("toy"),
+            NameContains("example"),
+            NameContains("lazy_import"),
+            NameContains("test")
+        )
+    )
+
+    create_graph_json(
+        Balance(
+            lambda x: x.get_score,
+            300,
+            None,
+            PathFilter("sage.rings").add(general_filter),
+            PathFilter("sage.combinat").add(general_filter),
+            Not(
+                PathFilter("sage.rings").add(general_filter),
+                PathFilter("sage.combinat").add(general_filter),
+            )
+        )
+    )
 
 if __name__ == "__main__":
     #create_module_class_map()
@@ -54,7 +69,6 @@ if __name__ == "__main__":
     #testing()
     #show_graph()
     Loader.initialize(scorer=DefaultScorer())
-    create_graph_json(min_in = 1, min_out = 1, excludes=["toy", "example", "lazy_import"], path="sage.rings")
+    generate_graph()
 
-    #Loader.initialize()
     #print(Loader.get_doc_urls(Data.get_class("sage.rings.polynomial.multi_polynomial_ideal.MPolynomialIdeal")))

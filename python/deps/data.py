@@ -1,74 +1,9 @@
 from typing import TYPE_CHECKING
-if TYPE_CHECKING:
-    from deps.model.module import Module
-    from deps.model.sageclass import SageClass
-    from deps.model.importable import Importable
 
-class Filter:
-    def __init__(self):
-        self._in_path = "sage"
-        self._not_in_paths = []
-        self._contains = []
-        self._not_contains = []
-        self._depth = None
-        self._min_depth = None
-        self._max_depth = None
-        self._min_in = 0
-        self._min_out = 0
-    
-    def in_path(self, path: str) -> 'Filter':
-        self._in_path = path
-        return self
-    
-    def exclude_path(self, path: str) -> 'Filter':
-        self._not_in_paths.append(path)
-        return self
-    
-    def contains(self, word: str) -> 'Filter':
-        self._contains.append(word)
-        return self
-    
-    def not_contains(self, word: str) -> 'Filter':
-        self._not_contains.append(word)
-        return self
-    
-    def depth(self, depth: int) -> 'Filter':
-        self._depth = depth
-        return self
-    
-    def min_depth(self, depth: int) -> 'Filter':
-        self._min_depth = depth
-        return self
+from deps.model.module import Module
+from deps.model.sageclass import SageClass
 
-    def max_depth(self, depth: int) -> 'Filter':
-        self._max_depth = depth
-        return self
-    
-    def min_in(self, num: int) -> 'Filter':
-        self._min_in = num
-        return self
-    
-    def min_out(self, num: int) -> 'Filter':
-        self._min_out = num
-        return self
-    
-    def applies_to(self, object: 'Importable') -> bool:
-        name = object.full_path_name
-        return name.startswith(self._in_path) and \
-            (not any([name.startswith(x) for x in self._not_in_paths])) and \
-            all([x in name for x in self._contains]) and \
-            (not any([x in name for x in self._not_contains])) and \
-            (self._depth is None or self._depth == object.depth) and \
-            (self._min_depth is None or self._min_depth <= object.depth) and \
-            (self._max_depth is None or self._max_depth >= object.depth) and \
-            (object.in_degree >= self._min_in) and \
-            (object.out_degree >= self._min_out) \
-
-    def apply(self, objects: list['Importable']):
-        return list(filter(
-            lambda obj: self.applies_to(obj),
-            objects
-        ))
+from deps.filter.filter import Filter, EmptyFilter
 
 class Data:
     modules = {}
@@ -114,11 +49,11 @@ class Data:
         return resolved_name
     
     @classmethod
-    def get_classes_filtered(cls, filter: Filter):
+    def get_classes_filtered(cls, filter: Filter = EmptyFilter()) -> list[SageClass]:
         return filter.apply(cls.classes.values())
-    
+
     @classmethod
-    def get_modules_filtered(cls, filter: Filter):
+    def get_modules_filtered(cls, filter: Filter = EmptyFilter()) -> list[Module]:
         return filter.apply(cls.modules.values())
 
     @classmethod

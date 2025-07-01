@@ -3,7 +3,6 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from deps.model.module import Module, File
 
-from deps.data import Data
 from deps.model.dependency import Dependency, Relation
 from deps.model.importable import Importable
 
@@ -112,14 +111,6 @@ class SageClass(Importable):
                 d.target.contained_in(other) and (relations is None or d.relation in relations)
                 for d in self._dependencies
             ])
-    
-    @classmethod
-    def from_json(cls, json_obj: str):
-        self_dict = json.loads(json_obj)
-        base_class = PythonClass if self_dict["type"] == "PythonClass" else CythonClass
-        module_name = self_dict["module"]
-        module = Data.get_module(module_name)
-        return base_class(module, self_dict["name"])
     
     def add_file_import(self, alias: str, file: 'File'):
         self._imported_files[alias] = file

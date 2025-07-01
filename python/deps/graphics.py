@@ -1,5 +1,6 @@
 from constants import *
-from deps.data import Data, Filter
+from deps.data import Data
+from deps.filter import Filter, PathFilter, MinDepthFilter
 from deps.model.dependency import Dependency, Relation
 from deps.model.module import Module, File
 from deps.model.sageclass import SageClass
@@ -22,7 +23,7 @@ def relation_to_colour(relation: Relation):
 
 def create_class_digraph():
     G = nx.DiGraph()
-    classes = Data.get_classes_filtered(Filter().in_path("sage.rings"))
+    classes = Data.get_classes_filtered(PathFilter())
     
     sage_class: SageClass
     for sage_class in classes:
@@ -39,9 +40,9 @@ def create_class_digraph():
     
     return G
 
-def create_module_digraph(depth=3, path="sage", relations=None):
+def create_module_digraph(filter: Filter):
     G = nx.DiGraph()
-    modules = Data.get_modules_filtered(Filter().depth(depth).in_path(path))
+    modules = Data.get_modules_filtered(filter)
     print(f"Number of modules: {len(modules)}")
     
     module: Module
@@ -62,13 +63,7 @@ def create_module_digraph(depth=3, path="sage", relations=None):
     return G
 
 def create_graph_json(
-        depth = None,
-        min_depth = None,
-        max_depth = None,
-        path = "sage",
-        min_in = 0,
-        min_out = 0,
-        excludes = []
+    filter: Filter
 ):
     result = {
         "elements": {
@@ -76,15 +71,10 @@ def create_graph_json(
             "edges": []
         }
     }
-    filter = Filter().depth(depth).in_path(path) \
-        .min_in(min_in).min_out(min_out).min_depth(min_depth)\
-        .max_depth(max_depth)
-    
-    for word in excludes:
-        filter = filter.not_contains(word)
 
     classes = Data.get_classes_filtered(filter)
     modules = Data.get_modules_filtered(filter)
+    modules = [m for m in modules if any(c in m.get_classes() for c in classes)]
     print(len(classes))
     print(len(modules))
 

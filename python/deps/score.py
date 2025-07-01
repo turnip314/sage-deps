@@ -1,4 +1,5 @@
-from deps.data import Data, Filter
+from deps.data import Data
+from deps.filter import Filter
 from deps.model.module import Module, File
 from deps.model.sageclass import SageClass
 
@@ -14,7 +15,7 @@ class DefaultScorer(Scorer):
 
     def score_50_to_top_level_imports(self):
         module: Module
-        for module in Data.get_modules_filtered(Filter()):
+        for module in Data.get_modules_filtered():
             if module.full_path_name.endswith("all"):
                 if not isinstance(module, File):
                     continue
@@ -22,14 +23,14 @@ class DefaultScorer(Scorer):
                     imported_item.set_score(50)
     
     def score_1_for_each_edge(self):
-        for sage_class in Data.get_classes_filtered(Filter()):
+        for sage_class in Data.get_classes_filtered():
             sage_class.set_score(
                 sage_class.get_score + sage_class.in_degree
                 + sage_class.out_degree
             )
     
     def score_commits(self):
-        for sage_class in Data.get_classes_filtered(Filter()):
+        for sage_class in Data.get_classes_filtered():
             commit_metadata = Data.get_commit_metadata(sage_class.module.full_path_name)
             commit_score = 0
             if commit_metadata is not None:
@@ -44,7 +45,7 @@ class DefaultScorer(Scorer):
     
     def set_module_to_max_of_class_score(self):
         module: Module
-        for module in Data.get_modules_filtered(Filter()):
+        for module in Data.get_modules_filtered():
             module.set_score(max([0] + [sage_class.get_score for sage_class in module.get_classes()]))
 
     def run(self):
