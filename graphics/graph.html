@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="utf-8" />
-  <title>Module Collapsing Graph</title>
+  <title>SageMath Dependency</title>
   <script src="https://unpkg.com/cytoscape@3.25.0/dist/cytoscape.min.js"></script>
   <style>
     html, body, #cy {
@@ -41,15 +41,52 @@
     #side-panel .label {
       font-weight: bold;
     }
+
+    .dropdown {
+      position: relative;
+      display: inline-block;
+    }
+
+    .dropbtn {
+      border: none;
+      padding: 6px 10px;
+      cursor: pointer;
+    }
+
+    .dropdown-content {
+      display: none;
+      position: absolute;
+      background-color: white;
+      border: 1px solid #ddd;
+      padding: 6px 10px;
+      z-index: 1;
+      max-height: 200px;
+      overflow-y: auto;
+      color: black;
+    }
+
+    .dropdown-content label {
+      display: block;
+      margin: 4px 0;
+    }
+
+    .dropdown.show .dropdown-content {
+      display: block;
+    }
   </style>
 </head>
 <body>
   <div style="padding: 10px; background: #222; color: white; font-family: sans-serif;">
     <label for="filter-type">Filter:</label>
-    <select id="filter-type">
-      <option value="node">Node</option>
-      <option value="edge">Edge</option>
-    </select>
+    <div class="dropdown">
+      <button onclick="toggleDropdown()" class="dropbtn">Dependency Types ⌄</button>
+      <div id="checkboxDropdown" class="dropdown-content">
+        <label><input type="checkbox" value="0" checked> Class-Level Import</label>
+        <label><input type="checkbox" value="1" checked> Top-Level Import</label>
+        <label><input type="checkbox" value="2" checked> Class Attribute</label>
+        <label><input type="checkbox" value="3" checked> Inheritance</label>
+      </div>
+    </div>
 
     <label for="filter-type">Minimum Score:</label>
     <input id="filter-min-score" placeholder="100" value="100", style="width: 100px;" />
@@ -129,6 +166,11 @@
      * Keeps track of modules that have been collapsed.
      */
     const collapsedModules = new Set();
+
+    /***
+     * Keeping track of parents of loaded nodes in case filter status changes.
+     */
+    const deferredParentMap = new Map();
 
     /***
      * Determines if node with id `ancestorId` is an ancestor of node `nodeId`.
@@ -280,10 +322,20 @@
         node.data.id.startsWith(settings.path)
       );
       const nodeIds = nodes.map(node => node.data.id);
-      
+
+      // Stores a map parentId -> childId when child is loaded in but parent is not 
+      nodes.forEach(
+        node => {
+          if (node.data.parent && !nodeIds.includes(node.data.parent) && !deferredParentMap.has(node.data.parent)) {
+            deferredParentMap.set(node.data.parent, node.data.id)
+          }
+        }
+      )
+
       const edges = data.elements.edges.filter(
         edge =>
-        nodeIds.includes(edge.data.source) && nodeIds.includes(edge.data.target)
+        nodeIds.includes(edge.data.source) && nodeIds.includes(edge.data.target) &&
+        settings.edgeTypes.has(edge.data.type)
       ).map(edge => {
         const updatedEdge = edge;
         updatedEdge.data.isSuper = false;
@@ -304,17 +356,30 @@
     function applyFilter() {
       settings.minScore = parseFloat(document.getElementById("filter-min-score").value, 100);
       settings.path = document.getElementById("filter-path").value
+      if (!settings.path) {
+        settings.path = "sage.rings"
+      }
+      const checkboxes = document.querySelectorAll('#checkboxDropdown input[type=checkbox]');
+      settings.edgeTypes = new Set(
+        Array.from(checkboxes)
+        .filter(cb => cb.checked)
+        .map(cb => parseInt(cb.value))
+      );
+      console.log(settings);
+
       return fetch("graph.json")
       .then(res => res.json())
       .then(data => {
         const filteredData = getFilteredElements(data, settings);
+        const filteredNodeIds = filteredData.nodes.map(node => node.data.id)
+        const fitleredEdgeIds = filteredData.edges.map(edge => edge.data.id)
         const newNodes = filteredData.nodes.filter(node => {
-          const id = node.data?.id;
-          return id && cy.getElementById(id).empty();
+          const id = node.data.id;
+          return cy.getElementById(id).empty();
         });
         const newEdges = filteredData.edges.filter(edge => {
-          const id = edge.data?.id;
-          return id && cy.getElementById(id).empty();
+          const id = edge.data.id;
+          return cy.getElementById(id).empty();
         });
 
         cy.batch(() => {
@@ -332,12 +397,35 @@
             }
           )
 
-          // Handle filtered out nodes
+          // Handle filtered out nodes and edges
           cy.nodes().forEach(
             node => {
-              if (node.data('score') < settings.minScore) {
+              if (!filteredNodeIds.includes(node.id())) {
                 // Remove filtered out nodes
                 node.remove();
+              }
+            }
+          )
+          cy.edges().forEach(
+            edge => {
+              if (!fitleredEdgeIds.includes(edge.id()) || 
+                  !filteredNodeIds.includes(edge.data('source') || 
+                  !filteredNodeIds.includes(edge.data('target')))) {
+                // Remove filtered out edges
+                edge.remove();
+              }
+            }
+          )
+
+          // Check if newNode is parent to any node who had their parent deferred
+          newNodes.forEach(
+            node => {
+              if (deferredParentMap.has(node.data.id)) {
+                const childNodeId = deferredParentMap.get(node.data.id);
+                const childNode = cy.getElementById(childNodeId);
+                if (childNode.nonempty()) {
+                  childNode.move({parent: node.data.id})
+                }
               }
             }
           )
@@ -408,6 +496,17 @@
       panel.style.display = "none";
     }
 
+    function toggleDropdown() {
+      const dropdown = document.querySelector('.dropdown');
+      dropdown.classList.toggle('show');
+    }
+
+    function getSelectedModules() {
+      const checkboxes = document.querySelectorAll('#checkboxDropdown input[type=checkbox]');
+      return Array.from(checkboxes)
+        .filter(cb => cb.checked)
+        .map(cb => cb.value);
+    }
 
     /***
      * Toggle modules and nodes on click.

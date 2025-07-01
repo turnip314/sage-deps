@@ -1,5 +1,6 @@
 import json
 
+from analysis.page_rank import PageRankAnalyzer
 from constants import *
 from deps.model.module import File, Module
 from deps.parser import Parser
@@ -61,6 +62,12 @@ def generate_graph():
         )
     )
 
+def run_graph_analysis(analysis="pagerank"):
+    if analysis == "pagerank":
+        analyzer = PageRankAnalyzer()
+        for id, score in analyzer.run()[:50]:
+            print(id, score)
+
 if __name__ == "__main__":
     #create_module_class_map()
     #create_import_map()
@@ -69,6 +76,7 @@ if __name__ == "__main__":
     #testing()
     #show_graph()
     Loader.initialize(scorer=DefaultScorer())
-    generate_graph()
+    #generate_graph()
+    run_graph_analysis()
 
     #print(Loader.get_doc_urls(Data.get_class("sage.rings.polynomial.multi_polynomial_ideal.MPolynomialIdeal")))

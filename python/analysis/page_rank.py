@@ -2,28 +2,17 @@ from deps.data import Data
 from analysis.graph_analysis import GraphAnalyzer
 from deps.filter import Filter, PathFilter
 from deps.model.sageclass import SageClass
-import networkx as nx
-import random
+
+
+import numpy as np
+from sknetwork.ranking import PageRank
 
 class PageRankAnalyzer(GraphAnalyzer):
     def __init__(self, filter: Filter = PathFilter()):
-        G = nx.DiGraph()
-        classes = Data.get_classes_filtered(filter)
-        
-        sage_class: SageClass
-        for sage_class in classes:
-            G.add_node(hash(sage_class))
+        super().__init__(filter, weight_by_strength=True)
 
-        for sage_class in classes:
-            for dep in sage_class.get_dependencies():
-                G.add_edge(
-                    hash(sage_class),
-                    hash(dep.target), 
-                    #relation = dep.relation, 
-                    #color = relation_to_colour(dep.relation)
-                )
+    def _run_analysis(self) -> list:
+        pagerank = PageRank()
+        scores = pagerank.fit_predict(self._adjacency_matrix)
+        return [(scid, score) for scid, score in zip(self._ids, scores)]
         
-        self._graph = G
-
-    def _run_analysis():
-        pass
