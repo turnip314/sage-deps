@@ -10,8 +10,8 @@ from deps.graphics import create_class_digraph, create_module_digraph, create_gr
 from deps.score import DefaultScorer
 from deps.filter import PathFilter, MinFanIn, MinFanOut, Or, Not, NameContains, ScoreFilter, Balance
 
-def create_module_class_map():
-    class_map = Parser.create_python_module_class_map()
+def create_module_class_map(testing=False):
+    class_map = Parser.create_python_module_class_map(list_symbols=not testing)
     class_map_json = json.dumps(class_map, indent=4)
     with open(MODULE_JSON_SRC, "w") as f: 
         f.write(class_map_json)
@@ -69,14 +69,14 @@ def run_graph_analysis(analysis="pagerank"):
             print(id, score)
 
 if __name__ == "__main__":
-    #create_module_class_map()
+    #create_module_class_map(testing=False)
     #create_import_map()
     #test_loading()
     #create_dependencies()
     #testing()
     #show_graph()
     Loader.initialize(scorer=DefaultScorer())
-    #generate_graph()
-    run_graph_analysis()
+    generate_graph()
+    #run_graph_analysis()
 
     #print(Loader.get_doc_urls(Data.get_class("sage.rings.polynomial.multi_polynomial_ideal.MPolynomialIdeal")))

@@ -162,6 +162,8 @@ class Loader:
                     if sage_class is None or not isinstance(sage_class, SageClass):
                         print(f"Cannot find class {full_class_path}")
                         continue
+
+                    symbols = class_dict["symbols"]
                     
                     import_map, file_import_map = sage_class.get_import_map(split_level=True)
                     for imported_class in import_map.values():
@@ -184,6 +186,17 @@ class Loader:
                     
                     full_import_map = import_map
                     full_import_map.update(file_import_map)
+
+                    for alias, imported_class in full_import_map.items():
+                        if any([symbol.startswith(alias) for symbol in symbols]):
+                            sage_class.add_dependency(
+                            Dependency(
+                                source = sage_class,
+                                target = imported_class,
+                                relation = Relation.DECLARED_IMPORT
+                            )
+                        )
+
                     for inherited_class_name in class_dict["inherited"]:
                         inherited_class = full_import_map.get(inherited_class_name)
                         if inherited_class is not None:
@@ -206,8 +219,9 @@ class Loader:
                                 )
                             )
         
+        sage_class: SageClass
         for sage_class in Data.classes.values():
-            sage_class.filter_dependencies()
+            sage_class.get_filter_dependencies()
 
     @classmethod
     def load_commit_metadata(cls):

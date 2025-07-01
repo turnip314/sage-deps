@@ -83,8 +83,9 @@
       <div id="checkboxDropdown" class="dropdown-content">
         <label><input type="checkbox" value="0" checked> Class-Level Import</label>
         <label><input type="checkbox" value="1" checked> Top-Level Import</label>
-        <label><input type="checkbox" value="2" checked> Class Attribute</label>
-        <label><input type="checkbox" value="3" checked> Inheritance</label>
+        <label><input type="checkbox" value="2" checked> Used Import</label>
+        <label><input type="checkbox" value="3" checked> Attribute</label>
+        <label><input type="checkbox" value="4" checked> Inheritance</label>
       </div>
     </div>
 
@@ -116,7 +117,7 @@
     const settings = {
       minScore: 100,
       path: "sage.rings",
-      edgeTypes: new Set([0,1,2,3])
+      edgeTypes: new Set([0,1,2,3,4])
     }
 
     /***
@@ -316,6 +317,14 @@
      * Takes a json of node and edge data and returns a filtered set of data.
      */
     function getFilteredElements(data, settings) {
+
+      data.elements.edges.forEach(
+        edge => {
+          if (edge.data.id === "sage.rings.polynomial.multi_polynomial_ideal.MPolynomialIdeal-sage.rings.integer.Integer") {
+            console.log(edge)
+          }
+        }
+      )
       const nodes = data.elements.nodes.filter(
         node =>
         node.data.score > settings.minScore &&
@@ -460,6 +469,7 @@
     function resetFilter() {
       settings.minScore = 100;
       settings.path = "sage.rings"
+      settings.edgeTypes = new Set([0,1,2,3,4])
       applyFilter().then(() => {
         collapseAllModules();
       });

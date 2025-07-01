@@ -34,10 +34,14 @@ class SageClass(Importable):
     def add_dependent(self, dep: Dependency):
         self._dependents.append(dep)
 
-    def filter_dependencies(self):
+    def get_filter_dependencies(self):
         """
         Only keep the strongest dependency link for a given targer
         """
+        inherited_classes = [dep.target for dep in self._dependencies if dep.relation == Relation.INHERITANCE]
+        for inherited_class in inherited_classes:
+            self._dependencies.extend(inherited_class.get_filter_dependencies())
+
         filtered_list = []
         classes = set()
         self._dependencies.sort(key = lambda dep: dep.relation, reverse=True)
@@ -48,6 +52,7 @@ class SageClass(Importable):
                 classes.add(dependency.target)
         
         self._dependencies = filtered_list
+        return filtered_list
     
     def to_dict(self) -> dict:
         self_dict = {
@@ -122,6 +127,8 @@ class SageClass(Importable):
         self._full_imports.append(file)
 
     def get_import_map(self, split_level=False) -> dict | tuple[dict, dict]:
+        """
+        """
         class_import_map = {}
 
         for file in self._full_imports:

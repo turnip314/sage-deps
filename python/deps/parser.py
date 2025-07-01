@@ -21,7 +21,7 @@ class Parser:
         return ".".join(["sage"] + parts)
 
     @classmethod
-    def create_python_module_class_map(cls, python=True, cython=True):
+    def create_python_module_class_map(cls, python=True, cython=True, list_symbols=True):
         module_class_map = {}
         for dirpath, _, filenames in os.walk(SAGE_SRC):
             for filename in filenames:
@@ -38,6 +38,7 @@ class Parser:
                             ],
                             "inherited": c["inherited"],
                             "attributes": c["attributes"],
+                            "symbols": c["symbols"] if list_symbols else []
                         } for c in parsed_python["classes"] 
                     ]
                     module_class_map[module_name]["imports"] =[
@@ -57,6 +58,7 @@ class Parser:
                             ],
                             "inherited": c["inherited"],
                             "attributes": c["attributes"],
+                            "symbols": c["symbols"] if list_symbols else []
                         } for c in parsed_cython["classes"] 
                     ]
                     module_class_map[module_name]["imports"] =[
@@ -70,10 +72,11 @@ class Parser:
     @classmethod
     def parse_cython(cls, file_path: str):
         results = {
-            "classes": [],          # {kind: str, name: str, line: int, functions: list, imports: list, attributes: list}
+            # {kind: str, name: str, line: int, functions: list, imports: list, attributes: list, symbols: list}
+            "classes": [],          
             "functions": [],        # (name, kind, lineno), top level functions only
             "imports": [],          # (type, code, lineno), top level imports only
-            "instantiations": []    # {name: str, func_name: str, type: str}
+            "instantiations": [],    # {name: str, func_name: str, type: str}
         }
 
         class_pattern = re.compile(r"\s*(cdef\s+)?class\s+(\w+)")
@@ -83,23 +86,30 @@ class Parser:
         attribute_pattern = re.compile(r"\s*self\.(\w+)\s*=\s*([\w\.]+)\(")
         call_pattern = re.compile(r"^(\w+)\s*=\s*([\w\.]+)\s*\(.*\)")
         alias_pattern = re.compile(r"^(\w+)\s*=\s*([\w\.]+)\s*$")
+        token_pattern = r'[a-zA-Z0-9._]+'
 
         with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
             last_class = None
+            in_comment_block = False
             for i, line in enumerate(f, 1):
+                if line.strip().startswith(('"""', 'r"""', 'f"""')):
+                    in_comment_block = not in_comment_block
+                if in_comment_block:
+                    continue
+
+                if last_class is not None:
+                    last_class["symbols"].extend(
+                        re.findall(token_pattern, line)
+                    )
+
                 # Check for unindent
-                if line and (
-                    line.startswith("def") or 
-                    line.startswith("cdef") or 
-                    line.startswith("from") or 
-                    line.startswith("import") or 
-                    line.startswith("class")
-                ):
+                if line and not re.match(r'\s', line):
                     last_class = None
 
                 # Class declarations
                 if match := class_pattern.match(line):
                     last_class = {
+                        "symbols": [],
                         "kind" : "cdef class" if match.group(1) else "class",
                         "name": match.group(2),
                         "line": i,
@@ -120,14 +130,11 @@ class Parser:
                         last_class["functions"].append(func)
 
                 # Import / from-import
-                elif cimport_pattern.match(line):
-                    imp = ("cimport", line.strip(), i)
-                    if last_class is None:
-                        results["imports"].append(imp)
+                elif cimport_pattern.match(line) or import_pattern.match(line):
+                    if cimport_pattern.match(line):
+                        imp = ("cimport", line.strip(), i)
                     else:
-                        last_class["imports"].append(imp)
-                elif import_pattern.match(line):
-                    imp = ("import", line.strip(), i)
+                        imp = ("import", line.strip(), i)
                     if last_class is None:
                         results["imports"].append(imp)
                     else:
@@ -149,7 +156,6 @@ class Parser:
                             "type": "instantiates"
                         }
                     )
-                    last_class = None
                 elif match := alias_pattern.match(line):
                     var, class_call = match.groups()
                     results["instantiations"].append(
@@ -159,14 +165,14 @@ class Parser:
                             "type": "alias"
                         }
                     )
-                    last_class = None
 
         return results
     
     @classmethod
     def parse_python(cls, file_path: str):
         results = {
-            "classes": [],          # {kind: str, name: str, line: int, functions: list, imports: list, attributes: list}
+            # {kind: str, name: str, line: int, functions: list, imports: list, attributes: list}
+            "classes": [],         
             "functions": [],        # (name, kind, lineno), top level functions only
             "imports": [],          # (type, code, lineno), top level imports only
             "instantiations": []    # {name: str, func_name: str, type: str}
@@ -201,6 +207,7 @@ class Parser:
             # Top-level classes
             elif isinstance(node, ast.ClassDef):
                 class_entry = {
+                    "symbols": [],
                     "kind": "class",
                     "name": node.name,
                     "line": node.lineno,
@@ -221,6 +228,11 @@ class Parser:
                         kind = "import" if isinstance(subnode, ast.Import) else "from-import"
                         code = ast.unparse(subnode)
                         class_entry["imports"].append((kind, code, subnode.lineno))
+                    else:
+                        token_pattern = r'[a-zA-Z0-9._]+'
+                        class_entry["symbols"].extend(
+                        re.findall(token_pattern, ast.unparse(subnode))
+                    )
 
                 results["classes"].append(class_entry)
     
