@@ -36,7 +36,8 @@ class SageClass(Importable):
 
     def get_filter_dependencies(self):
         """
-        Only keep the strongest dependency link for a given targer
+        Gets dependencies of inherited classes.
+        Only keep the strongest dependency link for a given target.
         """
         inherited_classes = [dep.target for dep in self._dependencies if dep.relation == Relation.INHERITANCE]
         for inherited_class in inherited_classes:

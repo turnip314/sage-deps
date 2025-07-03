@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>SageMath Dependency</title>
+  <link rel="stylesheet" href="graph.css" />
+  <script src="https://unpkg.com/cytoscape@3.25.0/dist/cytoscape.min.js"></script>
+</head>
+<body>
+  <div style="padding: 10px; background: #222; color: white; font-family: sans-serif;">
+    <label for="filter-type">Filter:</label>
+    <div class="dropdown">
+      <button onclick="toggleDropdown()" class="dropbtn">Dependency Types ⌄</button>
+      <div id="checkboxDropdown" class="dropdown-content">
+        <label><input type="checkbox" value="0" checked> Class-Level Import</label>
+        <label><input type="checkbox" value="1" checked> Top-Level Import</label>
+        <label><input type="checkbox" value="2" checked> Used Import</label>
+        <label><input type="checkbox" value="3" checked> Attribute</label>
+        <label><input type="checkbox" value="4" checked> Inheritance</label>
+      </div>
+    </div>
+
+    <label for="filter-type">Minimum Score:</label>
+    <input id="filter-min-score" placeholder="100" value="100", style="width: 100px;" />
+
+    <label for="filter-type">Path:</label>
+    <input id="filter-path" placeholder="sage.rings" style="width: 100px;" />
+  
+    <button onclick="applyFilter()">Apply Filter</button>
+    <button onclick="resetFilter()">Reset</button>
+  </div>
+
+  <div id="side-panel">
+    <button onclick="closePanel()">X</button>
+    <p></p>
+    <h2 id="panel-title"></h2>
+    <p><span class="label">Type:</span> <span id="panel-type"></span></p>
+    <p><span class="label">Score:</span> <span id="panel-score"></span></p>
+    <p><span class="label">Docs:</span> <a id="panel-doc" href="#" target="_blank">Open</a></p>
+  </div>
+
+  <div id="cy"></div>
+
+  <script src="graph.js"></script>
+</body>
+</html>
