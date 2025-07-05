@@ -5,7 +5,7 @@
 const settings = {
 minScore: 100,
 path: "sage.rings",
-edgeTypes: new Set([0,1,2,3,4])
+edgeTypes: new Set([0,1,2,3,4,5])
 }
 
 /***
@@ -50,7 +50,7 @@ style: [
     }
 },
 {
-    selector: 'edge[type = 4]', // inheritance
+    selector: 'edge[type = 5]', // inheritance
     style: {
     'line-color': '#0074D9',
     'target-arrow-shape': 'triangle',
@@ -59,7 +59,7 @@ style: [
     }
 },
 {
-    selector: 'edge[type = 3]', // attribute
+    selector: 'edge[type = 4]', // attribute
     style: {
     'line-color': '#2ECC40',
     'target-arrow-shape': 'circle',
@@ -68,9 +68,18 @@ style: [
     }
 },
 {
-    selector: 'edge[type = 2]', // invocation
+    selector: 'edge[type = 3]', // invocation
     style: {
     'line-color': '#FF851B',
+    'target-arrow-shape': 'vee',
+    'target-arrow-color': '#FF851B',
+    'line-style': 'solid'
+    }
+},
+{
+    selector: 'edge[type = 2]', // weak invocation
+    style: {
+    'line-color': '#FF750B',
     'target-arrow-shape': 'vee',
     'target-arrow-color': '#FF851B',
     'line-style': 'solid'
@@ -385,9 +394,9 @@ requestAnimationFrame(() => {
 function resetFilter() {
     settings.minScore = 100;
     settings.path = "sage.rings"
-    settings.edgeTypes = new Set([0,1,2,3,4])
+    settings.edgeTypes = new Set([0,1,2,3,4,5])
     applyFilter().then(() => {
-    collapseAllModules();
+        collapseAllModules();
     });
 }
 

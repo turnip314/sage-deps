@@ -214,7 +214,7 @@ class Parser:
             # Top-level classes
             elif isinstance(node, ast.ClassDef):
                 class_entry = {
-                    "symbols": [],
+                    "symbols": cls.extract_symbolic_names(node),
                     "kind": "class",
                     "name": node.name,
                     "line": node.lineno,
@@ -235,11 +235,6 @@ class Parser:
                         kind = "import" if isinstance(subnode, ast.Import) else "from-import"
                         code = ast.unparse(subnode)
                         class_entry["imports"].append((kind, code, subnode.lineno))
-                    elif not isinstance(subnode, ast.Constant):
-                        token_pattern = r'[a-zA-Z0-9._]+'
-                        class_entry["symbols"].extend(
-                            re.findall(token_pattern, ast.unparse(subnode))
-                        )
 
                 results["classes"].append(class_entry)
     
@@ -452,3 +447,30 @@ class Parser:
     @classmethod
     def strip_useless_symbols(cls, symbols: List[str]):
         return list(set(symbols).difference(cls.USELESS_SYMBOLS))
+    
+    @classmethod
+    def extract_symbolic_names(cls, node):
+        results = set()
+
+        class SymbolCollector(ast.NodeVisitor):
+            def visit_Name(self, n):
+                results.add(n.id)
+
+            def visit_Attribute(self, node):
+                # Recursively resolve dotted name like a.b.c
+                parts = []
+                while isinstance(node, ast.Attribute):
+                    parts.append(node.attr)
+                    node = node.value
+                if isinstance(node, ast.Name):
+                    parts.append(node.id)
+                    results.add(".".join(reversed(parts)))
+
+            def visit_Constant(self, node):
+                pass  # Ignore literals
+
+            def generic_visit(self, node):
+                super().generic_visit(node)
+
+        SymbolCollector().visit(node)
+        return sorted(results)

@@ -75,7 +75,7 @@ def run_graph_analysis(analyzer_cls: Type[GraphAnalyzer], filter: Filter = PathF
     print(analyzer.run())
 
 if __name__ == "__main__":
-    #create_module_class_map(testing=False)
+    create_module_class_map(testing=False)
     #create_import_map()
     #test_loading()
     #create_dependencies()

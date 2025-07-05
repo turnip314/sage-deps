@@ -22,11 +22,11 @@ class Data:
         cls.classes[full_path_name] = sageclass
 
     @classmethod
-    def get_module(cls, full_module_name: str) -> 'Module':
+    def get_module(cls, full_module_name: str) -> 'Module | None':
         return cls.modules.get(full_module_name, None)
 
     @classmethod
-    def get_class(cls, full_path_name: str) -> 'SageClass':
+    def get_class(cls, full_path_name: str) -> 'SageClass | None':
         resolved_name = cls.resolve_reference(full_path_name)
         return cls.classes.get(resolved_name, None)
     

@@ -174,7 +174,7 @@ class Loader:
                                 relation = Relation.SUB_METHOD_IMPORT
                             )
                         )
-                        if any([symbol.startswith(alias) for symbol in symbols]):
+                        if any([symbol == alias for symbol in symbols]):
                             sage_class.add_dependency(
                             Dependency(
                                 source = sage_class,
@@ -191,7 +191,7 @@ class Loader:
                                 relation = Relation.TOP_LEVEL_IMPORT
                             )
                         )
-                        if any([symbol.startswith(alias) for symbol in symbols]):
+                        if any([symbol == alias for symbol in symbols]):
                             sage_class.add_dependency(
                             Dependency(
                                 source = sage_class,
