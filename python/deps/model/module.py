@@ -1,5 +1,6 @@
 from typing import TYPE_CHECKING, List
 if TYPE_CHECKING:
+    from deps.model.dependency import Relation
     from deps.model.sageclass import SageClass
     from typing import List
 
@@ -69,13 +70,11 @@ class Module(Importable):
         
         return False
     
-    @property
-    def in_degree(self) -> int:
-        return sum([c.in_degree for c in self._children])
+    def in_degree(self, relations: 'List[Relation] | None' = None) -> int:
+        return sum([c.in_degree(relations) for c in self._children])
 
-    @property
-    def out_degree(self) -> int:
-        return sum([c.out_degree for c in self._children])
+    def out_degree(self, relations: 'List[Relation] | None' = None) -> int:
+        return sum([c.out_degree(relations) for c in self._children])
 
 class File(Module):
     def __init__(self, name: str, parent: 'Module', extension: str):
@@ -90,13 +89,11 @@ class File(Module):
     def extension(self) -> str | None:
         return self._extension
     
-    @property
-    def in_degree(self) -> int:
-        return sum([c.in_degree for c in self._classes])
+    def in_degree(self, relations: 'List[Relation] | None' = None) -> int:
+        return sum([c.in_degree(relations) for c in self._classes])
 
-    @property
-    def out_degree(self) -> int:
-        return sum([c.out_degree for c in self._classes])
+    def out_degree(self, relations: 'List[Relation] | None' = None) -> int:
+        return sum([c.out_degree(relations) for c in self._classes])
     
     def add_class(self, sage_class: 'SageClass'):
         self._classes.append(sage_class)

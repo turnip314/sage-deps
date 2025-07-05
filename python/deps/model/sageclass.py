@@ -2,6 +2,7 @@ import json
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from deps.model.module import Module, File
+    from typing import List
 
 from deps.model.dependency import Dependency, Relation
 from deps.model.importable import Importable
@@ -28,10 +29,14 @@ class SageClass(Importable):
         self._score = 0
 
     def add_dependency(self, dep: Dependency):
+        if dep.target == self:
+            return
         self._dependencies.append(dep)
         dep.target.add_dependent(dep)
     
     def add_dependent(self, dep: Dependency):
+        if dep.source == self:
+            return
         self._dependents.append(dep)
 
     def get_filter_dependencies(self):
@@ -75,13 +80,11 @@ class SageClass(Importable):
 
         return self_dict
     
-    @property
-    def in_degree(self) -> int:
-        return len(self._dependents)
+    def in_degree(self, relations: 'List[Relation] | None' = None) -> int:
+        return len(self.get_dependents(relations))
     
-    @property
-    def out_degree(self) -> int:
-        return len(self._dependencies)
+    def out_degree(self, relations: 'List[Relation] | None' = None) -> int:
+        return len(self.get_dependencies(relations))
 
     @property
     def name(self) -> str:
@@ -99,8 +102,11 @@ class SageClass(Importable):
     def depth(self) -> int:
         return self._module.depth
 
-    def get_dependencies(self) -> list[Dependency]:
-        return self._dependencies
+    def get_dependencies(self, relations: 'List[Relation] | None' = None) -> list[Dependency]:
+        return [dep for dep in self._dependencies if relations is None or dep.relation in relations]
+
+    def get_dependents(self, relations: 'List[Relation] | None' = None) -> list[Dependency]:
+        return [dep for dep in self._dependents if relations is None or dep.relation in relations]
 
     def contained_in(self, other: 'Module'):
         return other == self._module or self._module.contained_in(other)

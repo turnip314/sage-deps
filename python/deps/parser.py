@@ -1,5 +1,6 @@
 import json
 import re
+from typing import List
 
 from constants import *
 from deps.data import Data
@@ -12,6 +13,11 @@ import ast
 import json
 
 class Parser:
+    USELESS_SYMBOLS = set([
+        "__init__", "def", "class", "raise", "self", "return", "object", "if", "else", "elif", "not", "or", "and",
+        "None", "cdef", "in", "__xor__", "__mul__", "Parent.__init__", "except", "try", "is"
+    ])
+
     @classmethod
     def pyfile_to_module(cls, path):
         # Convert file path to module name
@@ -38,7 +44,7 @@ class Parser:
                             ],
                             "inherited": c["inherited"],
                             "attributes": c["attributes"],
-                            "symbols": c["symbols"] if list_symbols else []
+                            "symbols": cls.strip_useless_symbols(c["symbols"] if list_symbols else [])
                         } for c in parsed_python["classes"] 
                     ]
                     module_class_map[module_name]["imports"] =[
@@ -51,14 +57,14 @@ class Parser:
                     parsed_cython = cls.parse_cython(full_path)
                     module_class_map[module_name] = {}
                     module_class_map[module_name]["classes"] = [
-                        { 
+                        {
                             "classname": c["name"],
                             "imports": [
                                 cls.resolve_import(imp[1], module_name) for imp in c["imports"]
                             ],
                             "inherited": c["inherited"],
                             "attributes": c["attributes"],
-                            "symbols": c["symbols"] if list_symbols else []
+                            "symbols": cls.strip_useless_symbols(c["symbols"] if list_symbols else [])
                         } for c in parsed_cython["classes"] 
                     ]
                     module_class_map[module_name]["imports"] =[
@@ -66,6 +72,7 @@ class Parser:
                     ]
                     module_class_map[module_name]["extension"] = ".pyx"
                     module_class_map[module_name]["instantiations"] = parsed_cython["instantiations"]
+
 
         return module_class_map
 
@@ -96,11 +103,6 @@ class Parser:
                     in_comment_block = not in_comment_block
                 if in_comment_block:
                     continue
-
-                if last_class is not None:
-                    last_class["symbols"].extend(
-                        re.findall(token_pattern, line)
-                    )
 
                 # Check for unindent
                 if line and not re.match(r'\s', line):
@@ -165,6 +167,11 @@ class Parser:
                             "type": "alias"
                         }
                     )
+                
+                if last_class is not None:
+                    last_class["symbols"].extend(
+                        re.findall(token_pattern, line)
+                    )
 
         return results
     
@@ -228,11 +235,11 @@ class Parser:
                         kind = "import" if isinstance(subnode, ast.Import) else "from-import"
                         code = ast.unparse(subnode)
                         class_entry["imports"].append((kind, code, subnode.lineno))
-                    else:
+                    elif not isinstance(subnode, ast.Constant):
                         token_pattern = r'[a-zA-Z0-9._]+'
                         class_entry["symbols"].extend(
-                        re.findall(token_pattern, ast.unparse(subnode))
-                    )
+                            re.findall(token_pattern, ast.unparse(subnode))
+                        )
 
                 results["classes"].append(class_entry)
     
@@ -441,4 +448,7 @@ class Parser:
                                 }
                             )
         return assignments
-
+    
+    @classmethod
+    def strip_useless_symbols(cls, symbols: List[str]):
+        return list(set(symbols).difference(cls.USELESS_SYMBOLS))

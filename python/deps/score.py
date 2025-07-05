@@ -25,8 +25,8 @@ class DefaultScorer(Scorer):
     def score_1_for_each_edge(self):
         for sage_class in Data.get_classes_filtered():
             sage_class.set_score(
-                sage_class.get_score + sage_class.in_degree
-                + sage_class.out_degree
+                sage_class.get_score + sage_class.in_degree()
+                + sage_class.out_degree()
             )
     
     def score_commits(self):

@@ -1,7 +1,10 @@
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
+    from deps.model.dependency import Relation
     from deps.model.module import File
     from deps.model.sageclass import SageClass
+
+    from typing import List
 
 class Importable:
     def add_file_import(self, alias: str, file: 'File'):
@@ -24,12 +27,10 @@ class Importable:
     def depth(self) -> int:
         pass
 
-    @property
-    def in_degree(self) -> int:
+    def in_degree(self, relations: 'List[Relation] | None' = None) -> int:
         return 0
     
-    @property
-    def out_degree(self) -> int:
+    def out_degree(self, relations: 'List[Relation] | None' = None) -> int:
         return 0
     
     @property

@@ -1,0 +1,3 @@
+sage.rings.ring.pyx, line 659
+from sage.rings.polynomial.polynomial_element import Polynomial
+        if not isinstance(poly, Polynomial):

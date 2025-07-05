@@ -166,7 +166,7 @@ class Loader:
                     symbols = class_dict["symbols"]
                     
                     import_map, file_import_map = sage_class.get_import_map(split_level=True)
-                    for imported_class in import_map.values():
+                    for alias, imported_class in import_map.items():
                         sage_class.add_dependency(
                             Dependency(
                                 source = sage_class,
@@ -174,8 +174,16 @@ class Loader:
                                 relation = Relation.SUB_METHOD_IMPORT
                             )
                         )
-                    
-                    for imported_class in file_import_map.values():
+                        if any([symbol.startswith(alias) for symbol in symbols]):
+                            sage_class.add_dependency(
+                            Dependency(
+                                source = sage_class,
+                                target = imported_class,
+                                relation = Relation.DECLARED_SUB_IMPORT
+                            )
+                        )
+
+                    for alias, imported_class in file_import_map.items():
                         sage_class.add_dependency(
                             Dependency(
                                 source = sage_class,
@@ -183,19 +191,17 @@ class Loader:
                                 relation = Relation.TOP_LEVEL_IMPORT
                             )
                         )
-                    
-                    full_import_map = import_map
-                    full_import_map.update(file_import_map)
-
-                    for alias, imported_class in full_import_map.items():
                         if any([symbol.startswith(alias) for symbol in symbols]):
                             sage_class.add_dependency(
                             Dependency(
                                 source = sage_class,
                                 target = imported_class,
-                                relation = Relation.DECLARED_IMPORT
+                                relation = Relation.DECLARED_TOP_IMPORT
                             )
                         )
+                    
+                    full_import_map = import_map
+                    full_import_map.update(file_import_map)
 
                     for inherited_class_name in class_dict["inherited"]:
                         inherited_class = full_import_map.get(inherited_class_name)

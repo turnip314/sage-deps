@@ -10,7 +10,7 @@ class MinFanIn(Filter):
         self._deg = deg
 
     def _applies_to_self(self, object: 'Importable') -> bool:
-        return object.in_degree >= self._deg
+        return object.in_degree() >= self._deg
 
 class MinFanOut(Filter):
     def __init__(self, deg: int):
@@ -18,4 +18,4 @@ class MinFanOut(Filter):
         self._deg = deg
 
     def _applies_to_self(self, object: 'Importable') -> bool:
-        return object.out_degree >= self._deg
+        return object.out_degree() >= self._deg

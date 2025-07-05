@@ -383,75 +383,75 @@ requestAnimationFrame(() => {
  * TODO - does not currently work
  */
 function resetFilter() {
-settings.minScore = 100;
-settings.path = "sage.rings"
-settings.edgeTypes = new Set([0,1,2,3,4])
-applyFilter().then(() => {
-collapseAllModules();
-});
+    settings.minScore = 100;
+    settings.path = "sage.rings"
+    settings.edgeTypes = new Set([0,1,2,3,4])
+    applyFilter().then(() => {
+    collapseAllModules();
+    });
 }
 
 /***
  * Displays side panel with metadata information about the selected node
  */
 function showSidePanel(label, type, score, fqname, urls ) {
-const panel = document.getElementById("side-panel");
-document.getElementById("panel-title").textContent = label || fqname;
-document.getElementById("panel-type").textContent = type || "unknown";
-document.getElementById("panel-score").textContent = score ?? "n/a";
+    const panel = document.getElementById("side-panel");
+    document.getElementById("panel-title").textContent = label || fqname;
+    document.getElementById("panel-type").textContent = type || "unknown";
+    document.getElementById("panel-score").textContent = score ?? "n/a";
 
-const docLink = document.getElementById("panel-doc");
-docLink.textContent = "Loading";
-if (urls)  {
-docLink.textContent = urls[0];
-docLink.href = urls[0];
-}
-else {
-docLink.textContent = "Could not find documentation.";
-docLink.removeAttribute("href");
-}
+    const docLink = document.getElementById("panel-doc");
+    docLink.textContent = "Loading";
+    if (urls)  {
+    docLink.textContent = urls[0];
+    docLink.href = urls[0];
+    }
+    else {
+    docLink.textContent = "Could not find documentation.";
+    docLink.removeAttribute("href");
+    }
 
-panel.style.display = "block";
+    panel.style.display = "block";
 }
 
 /***
  * Hides the side panel.
  */
 function closePanel() {
-const panel = document.getElementById("side-panel");
-panel.style.display = "none";
+    const panel = document.getElementById("side-panel");
+    panel.style.display = "none";
 }
 
 function toggleDropdown() {
-const dropdown = document.querySelector('.dropdown');
-dropdown.classList.toggle('show');
+    const dropdown = document.querySelector('.dropdown');
+    dropdown.classList.toggle('show');
 }
 
 function getSelectedModules() {
-const checkboxes = document.querySelectorAll('#checkboxDropdown input[type=checkbox]');
-return Array.from(checkboxes)
-.filter(cb => cb.checked)
-.map(cb => cb.value);
+    const checkboxes = document.querySelectorAll('#checkboxDropdown input[type=checkbox]');
+    return Array.from(checkboxes)
+    .filter(cb => cb.checked)
+    .map(cb => cb.value);
 }
 
 /***
  * Toggle modules and nodes on click.
  */
 cy.on('tap', 'node', function(evt) {
-const node = evt.target;
-if (!node.isParent()) {
-console.log(node);
-console.log(node.data());
-showSidePanel(node.data('label'), node.data('type'), node.data('score'), node.id(), node.data('urls'));
-return;
-}
+    const node = evt.target;
+    if (!node.isParent()) {
+    console.log(node);
+    console.log(node.data());
+    showSidePanel(node.data('label'), node.data('type'), node.data('score'), node.id(), node.data('urls'));
+    return;
+    }
 
-const moduleId = node.id();
-if (collapsedModules.has(moduleId)) {
-expandModule(moduleId);
-} else {
-collapseModule(moduleId);
-}
+    const moduleId = node.id();
+    if (collapsedModules.has(moduleId)) {
+    expandModule(moduleId);
+    } else {
+    collapseModule(moduleId);
+    }
 });
 
 /***
@@ -459,27 +459,27 @@ collapseModule(moduleId);
  * Loads and renders the nodes and edges in collapsed form.
  */
 fetch("graph.json")
-.then(res => res.json())
-.then(data => {
-console.log("Data loaded")
-const filteredData = getFilteredElements(data, settings);
+    .then(res => res.json())
+    .then(data => {
+    console.log("Data loaded")
+    const filteredData = getFilteredElements(data, settings);
 
-cy.add(filteredData);
+    cy.add(filteredData);
 
-const layout = cy.layout({
-    name: 'breadthfirst',
-    directed: true,
-    padding: 10
-});
+    const layout = cy.layout({
+        name: 'breadthfirst',
+        directed: true,
+        padding: 10
+    });
 
-cy.once('layoutstop', () => {
-    createSuperEdges();
-    collapseAllModules();
-    showVisibleEdges();
-    console.log("Modules collapsed.");
-});
+    cy.once('layoutstop', () => {
+        createSuperEdges();
+        collapseAllModules();
+        showVisibleEdges();
+        console.log("Modules collapsed.");
+    });
 
-layout.run();
+    layout.run();
 
-console.log("cy initialized")
+    console.log("cy initialized")
 })
