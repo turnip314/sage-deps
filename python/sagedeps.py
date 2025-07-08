@@ -11,7 +11,31 @@ from deps.loader import Loader
 from deps.data import Data
 from deps.graphics import create_class_digraph, create_module_digraph, create_graph_json
 from deps.score import DefaultScorer
-from deps.filter import PathFilter, MinFanIn, MinFanOut, Or, Not, NameContains, ScoreFilter, Balance, Filter
+from deps.filter import PathFilter, MinFanIn, MinFanOut, Or, Not, NameContains, ScoreFilter, Balance, Filter, from_json_file
+
+def get_default_filter():
+    general_filter = Or(
+        MinFanOut(1),
+        MinFanIn(1)
+    ).add(
+        Not(
+            NameContains("toy"),
+            NameContains("example"),
+            NameContains("lazy_import"),
+            NameContains("test")
+        )
+    )
+    return Balance(
+            lambda x: x.get_score,
+            500,
+            None,
+            PathFilter("sage.rings").add(general_filter),
+            PathFilter("sage.combinat").add(general_filter),
+            Not(
+                PathFilter("sage.rings").add(general_filter),
+                PathFilter("sage.combinat").add(general_filter),
+            )
+        )
 
 def create_module_class_map(out_file, testing=False):
     class_map = Parser.create_python_module_class_map(list_symbols=not testing)
@@ -33,31 +57,9 @@ def create_dependencies(out_file):
 def show_module_graph(depth=3, path="sage"):
     create_module_digraph(depth=depth, path=path)
 
-def generate_graph(out_file):
-    general_filter = Or(
-        MinFanOut(1),
-        MinFanIn(1)
-    ).add(
-        Not(
-            NameContains("toy"),
-            NameContains("example"),
-            NameContains("lazy_import"),
-            NameContains("test")
-        )
-    )
-
+def generate_graph(out_file, filter):
     result = create_graph_json(
-        Balance(
-            lambda x: x.get_score,
-            500,
-            None,
-            PathFilter("sage.rings").add(general_filter),
-            PathFilter("sage.combinat").add(general_filter),
-            Not(
-                PathFilter("sage.rings").add(general_filter),
-                PathFilter("sage.combinat").add(general_filter),
-            )
-        )
+        filter
     )
 
     with open(out_file, "w") as f:
@@ -102,6 +104,14 @@ if __name__ == "__main__":
         dest="generate_graph", 
         help="Generate an graph file. Can optionally pass in destination file."
     )
+    parser.add_argument(
+        "--ff",
+        nargs="?",
+        dest="filter_source", 
+        const=FILTER_JSON,
+        default=False,
+        help="Load a custom filter. If not, a default filter is used."
+    )
     parser.add_argument("--verbose", action="store_true", help="Enable verbose output.")
 
     args = parser.parse_args()
@@ -115,10 +125,15 @@ if __name__ == "__main__":
         create_module_class_map(args.generate_modules)
     
     Loader.initialize(scorer=DefaultScorer())
+    if args.filter_source:
+        filter = from_json_file(args.filter_source)
+    else:
+        filter = get_default_filter()
+
     if args.generate_dependencies:
         create_dependencies(args.generate_dependencies)
     if args.generate_imports:
         create_import_map(args.generate_imports)
     if args.generate_graph:
-        create_import_map(args.generate_graph)
+        generate_graph(args.generate_graph, filter)
 

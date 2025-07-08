@@ -29,7 +29,6 @@ class Loader:
         """
         base_module = Module("sage", None)
         Data.add_module("sage", base_module)
-        print(MODULE_JSON_SRC)
         with open(MODULE_JSON_SRC, "r") as f:
             modules_dict = json.loads(f.read())
             for module_name in modules_dict.keys():
