@@ -5,7 +5,7 @@
 const settings = {
 minScore: 100,
 path: "sage.rings",
-edgeTypes: new Set([0,1,2,3,4,5])
+edgeTypes: new Set([2,3,4,5])
 }
 
 /***
@@ -394,7 +394,7 @@ requestAnimationFrame(() => {
 function resetFilter() {
     settings.minScore = 100;
     settings.path = "sage.rings"
-    settings.edgeTypes = new Set([0,1,2,3,4,5])
+    settings.edgeTypes = new Set([2,3,4,5])
     applyFilter().then(() => {
         collapseAllModules();
     });

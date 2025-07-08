@@ -1,3 +1,5 @@
+from typing import List
+
 from constants import *
 from deps.data import Data
 from deps.filter import Filter, PathFilter, MinDepthFilter
@@ -15,8 +17,8 @@ def random_color():
 
 def relation_to_colour(relation: Relation):
     return {
-        Relation.SUB_METHOD_IMPORT: "yellow",
-        Relation.TOP_LEVEL_IMPORT: "lime",
+        Relation.DECLARED_SUB_IMPORT: "yellow",
+        Relation.DECLARED_TOP_IMPORT: "lime",
         Relation.CLASS_ATTRIBUTE: "cyan",
         Relation.INHERITANCE: "purple"
     }[relation]
@@ -40,13 +42,14 @@ def create_class_digraph():
     
     return G
 
-def create_module_digraph(filter: Filter):
+def create_module_digraph(filter: Filter, relations: List[Relation]):
     G = nx.DiGraph()
     modules = Data.get_modules_filtered(filter)
     print(f"Number of modules: {len(modules)}")
     
     module: Module
     for module in modules:
+        path = module.parent.full_path_name if module.parent is not None else ""
         G.add_node(
             hash(module),
             label=module.full_path_name.removeprefix(path),
@@ -128,7 +131,5 @@ def create_graph_json(
                     } 
                 }
             )
-        
-    with open(GRAPH_JSON, "w") as f:
-        f.write(json.dumps(result, indent=4))
+    return result
  

@@ -14,7 +14,12 @@ class GraphAnalyzer:
             self,
             filter: Filter = PathFilter(),
             weight_by_strength=True,
-            edge_types: List[Relation] | None = None
+            edge_types: List[Relation] | None = list([
+                Relation.INHERITANCE, 
+                Relation.CLASS_ATTRIBUTE, 
+                Relation.DECLARED_TOP_IMPORT, 
+                Relation.DECLARED_SUB_IMPORT
+            ])
         ):
         classes = Data.get_classes_filtered(filter)
         adj = np.zeros((len(classes), len(classes)))

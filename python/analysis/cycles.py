@@ -24,7 +24,7 @@ class CyclesAnalyzer(GraphAnalyzer):
         self._max_breadth = kwargs.get("max_breadth", 10000)
         self._depth_first = kwargs.get("depth_first", True)
     
-    def _run_cycle_search(self, bf=True):
+    def _run_cycle_search(self):
         t = time.monotonic()
         cycles = []
         paths: List[List[str]]
@@ -35,6 +35,8 @@ class CyclesAnalyzer(GraphAnalyzer):
             else:
                 cur_path = paths.pop(0)
             next_nodes = self._graph.neighbors(cur_path[-1])
+            #print(list(next_nodes))
+            #return
             for node in next_nodes:
                 if node not in cur_path:
                     paths.append(cur_path + [node])

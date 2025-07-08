@@ -15,6 +15,7 @@ class Loader:
         cls.load_all_classes()
         cls.load_all_instantiations()
         cls.build_import_relations()
+        cls.add_interfaces()
         cls.create_dependencies()
         cls.load_commit_metadata()
         cls.parse_rst_content()
@@ -28,7 +29,8 @@ class Loader:
         """
         base_module = Module("sage", None)
         Data.add_module("sage", base_module)
-        with open(MODULE_JSON_SRC) as f:
+        print(MODULE_JSON_SRC)
+        with open(MODULE_JSON_SRC, "r") as f:
             modules_dict = json.loads(f.read())
             for module_name in modules_dict.keys():
                 submodule_names = module_name.split(".")[1:]
@@ -142,6 +144,17 @@ class Loader:
                             object.add_class_import(alias, imported_class)
                 else:
                     object.add_file_import(import_dict["alias"], imported_module)
+
+    @classmethod
+    def add_interfaces(cls):
+        for sage_class in Data.get_classes_filtered():
+            class_name = sage_class.full_path_name
+            singular_repr_name = f"{class_name}_singular_repr"
+            if (singular_repr := Data.get_class(singular_repr_name)) is not None:
+                sage_class.add_interface(singular_repr)
+            m2_repr_name = f"{class_name}_macaulay2_repr"
+            if (m2_repr := Data.get_class(m2_repr_name)) is not None:
+                sage_class.add_interface(m2_repr)
 
     @classmethod
     def create_dependencies(cls):

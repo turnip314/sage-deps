@@ -7,14 +7,18 @@ if TYPE_CHECKING:
 from deps.model.dependency import Dependency, Relation
 from deps.model.importable import Importable
 
+class Interface:
+    MACAULAY2 = "m2"
+    LIBSINGULAR = "singular"
 
 class SageClass(Importable):
     def __init__(
             self,
             module: 'File',
-            classname,
-            is_abstract,
-            is_cython,
+            classname: str,
+            is_abstract: bool,
+            is_cython: bool,
+            interface: Interface | None = None
 
     ):
         self._name = classname
@@ -27,6 +31,8 @@ class SageClass(Importable):
         self._dependencies = []
         self._dependents = []
         self._score = 0
+        self._interface_type = interface
+        self._interfaces = []
 
     def add_dependency(self, dep: Dependency):
         if dep.target == self:
@@ -53,7 +59,7 @@ class SageClass(Importable):
         self._dependencies.sort(key = lambda dep: dep.relation, reverse=True)
         dependency: Dependency
         for dependency in self._dependencies:
-            if dependency.target not in classes:
+            if dependency.target not in classes and dependency.target != self:
                 filtered_list.append(dependency)
                 classes.add(dependency.target)
         
@@ -101,6 +107,16 @@ class SageClass(Importable):
     @property
     def depth(self) -> int:
         return self._module.depth
+    
+    @property
+    def is_interface(self) -> bool:
+        return self._interface_type is not None
+
+    def add_interface(self, other: 'SageClass'):
+        self._interfaces.append(other)
+    
+    def get_interfaces(self) -> 'List[SageClass]':
+        return self._interfaces
 
     def get_dependencies(self, relations: 'List[Relation] | None' = None) -> list[Dependency]:
         return [dep for dep in self._dependencies if relations is None or dep.relation in relations]

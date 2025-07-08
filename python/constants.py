@@ -1,18 +1,14 @@
-import os
-from dotenv import load_dotenv
 from pathlib import Path
+this_dir = Path(__file__).parent
 
-dotenv_path = Path(__file__).parent / "config.env"
-load_dotenv(dotenv_path=dotenv_path)
-
-SAGE_SRC = os.getenv("SAGE_SRC")
-SAGE_BASE = os.getenv("SAGE_BASE")
-MODULE_JSON_SRC = os.getenv("MODULE_JSON_SRC")
-MODULE_JSON_SRC_TEST = os.getenv("MODULE_JSON_SRC_TEST")
-IMPORT_MAP_SRC = os.getenv("IMPORT_MAP_SRC")
-DEPENDENCIES_JSON = os.getenv("DEPENDENCIES_JSON")
-GRAPH_JSON = os.getenv("GRAPH_JSON")
-COMMIT_HISTORY = os.getenv("COMMIT_HISTORY")
-COMMIT_METADATA = os.getenv("COMMIT_METADATA")
-LOCAL_DOC_ROOT = os.getenv("LOCAL_DOC_ROOT")
+SAGE_BASE = this_dir.parent.parent/"sage"
+SAGE_SRC = SAGE_BASE/"src"/"sage"
+MODULE_JSON_SRC = this_dir.parent.parent/"modules.json"
+MODULE_JSON_SRC_TEST = this_dir.parent/"resources"/"modules.json"
+IMPORT_MAP_SRC = this_dir.parent/"resources"/"imports.json"
+DEPENDENCIES_JSON = this_dir.parent/"resources"/"dependencies.json"
+GRAPH_JSON = this_dir.parent/"graphics"/"graph.json"
+COMMIT_HISTORY = this_dir.parent/"resources"/"commits.txt"
+COMMIT_METADATA = this_dir.parent/"resources"/"commit_metadata.json"
+LOCAL_DOC_ROOT = SAGE_BASE/"src"/"doc"/"en"/"reference"
 DOC_BASE_URL = "https://doc.sagemath.org/html/en/reference"

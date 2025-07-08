@@ -198,3 +198,5 @@ cython_debug/
 
 # local tests
 test/
+
+python/test.py
