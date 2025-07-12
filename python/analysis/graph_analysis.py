@@ -19,12 +19,26 @@ class GraphAnalyzer:
                 Relation.CLASS_ATTRIBUTE, 
                 Relation.DECLARED_TOP_IMPORT, 
                 Relation.DECLARED_SUB_IMPORT
-            ])
+            ]),
+            weights = None
         ):
         classes = Data.get_classes_filtered(filter)
         adj = np.zeros((len(classes), len(classes)))
 
         self._ids = [sc.full_path_name for sc in classes]
+
+        if weights is not None:
+            weights_map = {
+                rel: w for rel, w in zip(edge_types or range(6), weights)
+            }
+        elif weight_by_strength:
+            weights_map = {
+                rel: rel for rel in edge_types or range(6)
+            }
+        else:
+            weights_map = {
+                rel: 1 for rel in edge_types or range(6)
+            }
 
         sage_class: SageClass
         for sage_class in classes:
@@ -32,7 +46,7 @@ class GraphAnalyzer:
                 if dep.target.full_path_name in self._ids:
                     source_idx = self._ids.index(sage_class.full_path_name)
                     dest_idx = self._ids.index(dep.target.full_path_name)
-                    weight = 1 if not weight_by_strength else dep.relation+1
+                    weight = weights_map[dep.relation]
                     adj[source_idx, dest_idx] = weight
         
         self._adjacency_matrix = sparse.csr_matrix(adj)

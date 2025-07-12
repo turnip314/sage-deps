@@ -1,4 +1,9 @@
 
+
+window.addEventListener("beforeunload", () => {
+    navigator.sendBeacon("/closed");
+});
+
 /***
  * Filter settings.
  */

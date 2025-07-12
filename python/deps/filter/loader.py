@@ -1,6 +1,13 @@
 import json
 
-from deps.filter import *
+from deps.filter.filter import Filter, EmptyFilter
+from deps.filter.balance import Balance
+from deps.filter.score_filter import ScoreFilter
+from deps.filter.connectors import Not, Or, All
+from deps.filter.degree_filter import MinFanIn, MinFanOut
+from deps.filter.depth_filter import MinDepthFilter, MaxDepthFilter
+from deps.filter.path_filter import PathFilter
+from deps.model.dependency import Relation
 
 def parse_metric(name: str):
     match name:
@@ -91,7 +98,7 @@ def parse_filter(name, data):
     
     if "filter" in data:
         subdata = data["filter"]
-        result.add(parse_filter(subdata.name, subdata.filter))
+        result.add(parse_filter(subdata.name, subdata.data))
 
     return result
 

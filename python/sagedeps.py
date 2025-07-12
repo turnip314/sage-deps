@@ -1,17 +1,28 @@
+import functools
 import json
+import threading
+import time
+import webbrowser
 from argparse import ArgumentParser
-from typing import Type
+from http.server import HTTPServer, SimpleHTTPRequestHandler
 
 from analysis import *
 from constants import *
-from deps.model.dependency import Relation
-from deps.model.module import File, Module
 from deps.parser import Parser
 from deps.loader import Loader
-from deps.data import Data
 from deps.graphics import create_class_digraph, create_module_digraph, create_graph_json
 from deps.score import DefaultScorer
-from deps.filter import PathFilter, MinFanIn, MinFanOut, Or, Not, NameContains, ScoreFilter, Balance, Filter, from_json_file
+from deps.filter import PathFilter, MinFanIn, MinFanOut, Or, Not, NameContains, Balance, from_json_file
+
+class MyHandler(SimpleHTTPRequestHandler):
+    def do_GET(self):
+        if self.path == "/closed":
+            print("Browser was closed or navigated away!")
+            self.send_response(200)
+            self.end_headers()
+            self.wfile.write(b"Closed received")
+        else:
+            super().do_GET()  # Serve files normally
 
 def get_default_filter():
     general_filter = Or(
@@ -66,12 +77,25 @@ def generate_graph(out_file, filter):
         f.write(json.dumps(result, indent=4))
 
 def run_graph_analysis(analyzer: GraphAnalyzer):
-    print(analyzer.run())
+    return analyzer.run()
+
+def run_server():
+    handler_class = functools.partial(MyHandler, directory=GRAPH_DIR)
+    httpd = HTTPServer(('localhost', 8100), handler_class)
+    print("Launching cytoscape viewer...")
+    httpd.serve_forever()
 
 if __name__ == "__main__":
     parser = ArgumentParser(prog="sagedeps", description="A program top help manage SageMath dependencies.")
     parser.add_argument("-s", "--sage-source", dest="sage_source", help="The source file of Sage.")
     parser.add_argument("-m", "--modules-source", dest="modules_source",help="Specify the modules file.")
+    parser.add_argument("-o", "--output-file", dest="output_file",help="Specify the file to dump the output.")
+    parser.add_argument(
+        "-up", 
+        nargs=2,
+        dest="up_dependency",
+        help="Generates a breadth-first dependency tree rooted at a particular node, up to a given depth."
+    )
     parser.add_argument(
         "--gm", "--generate-modules",
         nargs="?",
@@ -112,9 +136,17 @@ if __name__ == "__main__":
         default=False,
         help="Load a custom filter. If not, a default filter is used."
     )
-    parser.add_argument("--verbose", action="store_true", help="Enable verbose output.")
+    parser.add_argument(
+        "-view", "--view",
+        dest="show_view",
+        action="store_true",
+        help="Runs a cytoscape.js instance.")
 
+    parser.add_argument("--verbose", action="store_true", help="Enable verbose output.")
+    
     args = parser.parse_args()
+
+    result = ""
 
     verbose = args.verbose
     if args.sage_source:
@@ -130,6 +162,12 @@ if __name__ == "__main__":
     else:
         filter = get_default_filter()
 
+    if args.up_dependency:
+        source = args.up_dependency[0]
+        depth = int(args.up_dependency[1])
+        result = run_graph_analysis(
+            DistanceAnalyzer(source, depth, filter)
+        )
     if args.generate_dependencies:
         create_dependencies(args.generate_dependencies)
     if args.generate_imports:
@@ -137,3 +175,13 @@ if __name__ == "__main__":
     if args.generate_graph:
         generate_graph(args.generate_graph, filter)
 
+    if args.show_view:
+        threading.Thread(target=run_server, daemon=True).start()
+        time.sleep(1)
+        webbrowser.open("http://localhost:8100/index.html")
+
+    if args.output_file:
+        with open(args.output_file, "w+") as f:
+            f.write(result)
+    else:
+        print(result)
