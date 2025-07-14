@@ -23,21 +23,25 @@ style: [
 {
     selector: 'node',
     style: {
-    'label': 'data(id)',
+    'label': 'data(label)',
     'background-color': '#29b6f6',
     'text-valign': 'center',
     'text-halign': 'center',
     'color': '#fff',
-    'font-size': '10px'
+    'font-size': '16px'
     }
 },
 {
     selector: ':parent',
     style: {
-    'background-color': '#455a64',
+    'label': 'data(label)',
+    'background-color': '#a2d2ff',
+    'background-opacity': 0.2,
     'text-valign': 'top',
     'padding': 10,
-    'font-size': '12px'
+    'font-size': '24px',
+    'border-color': '#0064C9',
+    'border-width': 3
     }
 },
 {

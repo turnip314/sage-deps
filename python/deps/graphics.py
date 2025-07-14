@@ -116,7 +116,6 @@ def create_graph_json(
             }
         )
 
-
         dep: Dependency
         for dep in sage_class.get_dependencies():
             if dep.target == sage_class or dep.target not in classes:

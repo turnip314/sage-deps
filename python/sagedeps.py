@@ -13,16 +13,19 @@ from deps.loader import Loader
 from deps.graphics import create_class_digraph, create_module_digraph, create_graph_json
 from deps.score import DefaultScorer
 from deps.filter import PathFilter, MinFanIn, MinFanOut, Or, Not, NameContains, Balance, from_json_file
+from deps.data import Data
 
+httpd = None
 class MyHandler(SimpleHTTPRequestHandler):
     def do_GET(self):
-        if self.path == "/closed":
-            print("Browser was closed or navigated away!")
+        super().do_GET()
+    def do_POST(self):
+        if "/closed" in self.path:
             self.send_response(200)
             self.end_headers()
             self.wfile.write(b"Closed received")
-        else:
-            super().do_GET()  # Serve files normally
+            print("Browser was closed or navigated away!")
+            threading.Thread(target=httpd.shutdown).start()
 
 def get_default_filter():
     general_filter = Or(
@@ -80,10 +83,15 @@ def run_graph_analysis(analyzer: GraphAnalyzer):
     return analyzer.run()
 
 def run_server():
+    global httpd
     handler_class = functools.partial(MyHandler, directory=GRAPH_DIR)
     httpd = HTTPServer(('localhost', 8100), handler_class)
     print("Launching cytoscape viewer...")
     httpd.serve_forever()
+
+def open_browser():
+    time.sleep(1)
+    webbrowser.open("http://localhost:8100/index.html")
 
 if __name__ == "__main__":
     parser = ArgumentParser(prog="sagedeps", description="A program top help manage SageMath dependencies.")
@@ -95,6 +103,12 @@ if __name__ == "__main__":
         nargs=2,
         dest="up_dependency",
         help="Generates a breadth-first dependency tree rooted at a particular node, up to a given depth."
+    )
+    parser.add_argument(
+        "-cc", 
+        nargs=2,
+        dest="check_cycles",
+        help="Finds cycles starting at given node."
     )
     parser.add_argument(
         "--gm", "--generate-modules",
@@ -168,6 +182,15 @@ if __name__ == "__main__":
         result = run_graph_analysis(
             DistanceAnalyzer(source, depth, filter)
         )
+    if args.check_cycles:
+        source = args.check_cycles[0]
+        timeout = int(args.check_cycles[1])
+        result = run_graph_analysis(
+            CyclesAnalyzer(
+            start_node=Data.get_class(source), 
+            time_limit = timeout
+            )
+        )
     if args.generate_dependencies:
         create_dependencies(args.generate_dependencies)
     if args.generate_imports:
@@ -176,12 +199,11 @@ if __name__ == "__main__":
         generate_graph(args.generate_graph, filter)
 
     if args.show_view:
-        threading.Thread(target=run_server, daemon=True).start()
-        time.sleep(1)
-        webbrowser.open("http://localhost:8100/index.html")
+        threading.Thread(target=open_browser, daemon=True).start()
+        run_server()
 
     if args.output_file:
-        with open(args.output_file, "w+") as f:
-            f.write(result)
+        with open(Path(__file__).parent/args.output_file, "w+") as f:
+            f.write(str(result))
     else:
         print(result)

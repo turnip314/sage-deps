@@ -1,17 +1,10 @@
-import json
 import re
 import os
 from typing import List
 
 from constants import *
-from deps.data import Data
-from deps.loader import Loader
-from deps.model.dependency import Relation
-from deps.model.module import File, Module
-from deps.model.sageclass import SageClass
 
 import ast
-import json
 
 class Parser:
     USELESS_SYMBOLS = set([
@@ -55,7 +48,11 @@ class Parser:
                     module_class_map[module_name]["instantiations"] = parsed_python["instantiations"]
 
                 elif cython and filename.endswith(".pyx"):
-                    parsed_cython = cls.parse_cython(full_path)
+                    cython_header = full_path.strip(".pyx") + ".pxd"
+                    if Path(cython_header).is_file():
+                        parsed_cython = cls.parse_cython(full_path, cython_header)
+                    else:
+                        parsed_cython = cls.parse_cython(full_path)
                     module_class_map[module_name] = {}
                     module_class_map[module_name]["classes"] = [
                         {
@@ -78,7 +75,7 @@ class Parser:
         return module_class_map
 
     @classmethod
-    def parse_cython(cls, file_path: str):
+    def parse_cython(cls, file_path: str, cython_header: str | None = None):
         results = {
             # {kind: str, name: str, line: int, functions: list, imports: list, attributes: list, symbols: list}
             "classes": [],          
@@ -95,6 +92,17 @@ class Parser:
         call_pattern = re.compile(r"^(\w+)\s*=\s*([\w\.]+)\s*\(.*\)")
         alias_pattern = re.compile(r"^(\w+)\s*=\s*([\w\.]+)\s*$")
         token_pattern = r'[a-zA-Z0-9._]+'
+
+        if cython_header is not None:
+            with open(cython_header, "r", encoding="utf-8", errors="ignore") as f:
+                for line in f:
+                    if cimport_pattern.match(line) or import_pattern.match(line):
+                        if cimport_pattern.match(line):
+                            imp = ("cimport", line.strip(), 0)
+                        else:
+                            imp = ("import", line.strip(), 0)
+                        results["imports"].append(imp)
+                    
 
         with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
             last_class = None

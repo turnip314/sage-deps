@@ -22,7 +22,7 @@ class CyclesAnalyzer(GraphAnalyzer):
 
         self._time_limit = kwargs.get("time_limit", 120)
         self._max_breadth = kwargs.get("max_breadth", 10000)
-        self._depth_first = kwargs.get("depth_first", True)
+        self._depth_first = kwargs.get("depth_first", False)
     
     def _run_cycle_search(self):
         t = time.monotonic()
@@ -41,7 +41,7 @@ class CyclesAnalyzer(GraphAnalyzer):
                 if node not in cur_path:
                     paths.append(cur_path + [node])
                 elif node == self._start_node:
-                    cycles.append(cur_path + [node])
+                    cycles.append((cur_path + [node], len(cur_path) + 1))
 
             paths = paths[:self._max_breadth]
             if time.monotonic() - t > self._time_limit:
@@ -58,6 +58,9 @@ class CyclesAnalyzer(GraphAnalyzer):
         # Finding all cycles is too slow for any reasonably large graph
         #cycles = nx.simple_cycles(self._graph)
         #return [(cycle, len(cycle)) for cycle in cycles]
+
+    def run(self, ascending = False):
+        return [x[0] for x in super().run(ascending)]
 
 
         

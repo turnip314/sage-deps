@@ -52,6 +52,7 @@ class SageClass(Importable):
         """
         inherited_classes = [dep.target for dep in self._dependencies if dep.relation == Relation.INHERITANCE]
         for inherited_class in inherited_classes:
+            continue
             self._dependencies.extend(inherited_class.get_filter_dependencies())
 
         filtered_list = []

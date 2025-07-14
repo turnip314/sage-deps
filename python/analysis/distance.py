@@ -27,7 +27,7 @@ class DistanceAnalyzer(GraphAnalyzer):
             self._adjacency_matrix.transpose(copy=False)
 
     def _run_analysis(self) -> dict:
-        distances = nx.single_source_shortest_path_length(self._graph.reverse(), self._starting_node, self._max_distance)
+        distances = nx.single_source_shortest_path_length(self._graph, self._starting_node, self._max_distance)
         nodes_by_distance = {
             distance: [node for node, dist in distances.items() if dist == distance]
             for distance in range(self._max_distance+1)
