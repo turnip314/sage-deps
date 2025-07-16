@@ -12,7 +12,7 @@ from deps.parser import Parser
 from deps.loader import Loader
 from deps.graphics import create_class_digraph, create_module_digraph, create_graph_json
 from deps.score import DefaultScorer
-from deps.filter import PathFilter, MinFanIn, MinFanOut, Or, Not, NameContains, Balance, from_json_file
+from deps.filter import PathFilter, MinFanIn, MinFanOut, Or, Not, NameContains, Balance, DistanceFilter, from_json_file
 from deps.data import Data
 
 httpd = None
@@ -71,7 +71,18 @@ def create_dependencies(out_file):
 def show_module_graph(depth=3, path="sage"):
     create_module_digraph(depth=depth, path=path)
 
-def generate_graph(out_file, filter):
+def generate_graph(out_file=GRAPH_JSON, filter=get_default_filter()):
+    result = create_graph_json(
+        filter
+    )
+
+    with open(out_file, "w") as f:
+        f.write(json.dumps(result, indent=4))
+
+def generate_tree(source, distance, direction, out_file=GRAPH_DIR/"tree.json"):
+    filter = DistanceFilter(
+        source, int(distance), direction
+    )
     result = create_graph_json(
         filter
     )
@@ -89,9 +100,9 @@ def run_server():
     print("Launching cytoscape viewer...")
     httpd.serve_forever()
 
-def open_browser():
+def open_browser(file="graph.json"):
     time.sleep(1)
-    webbrowser.open("http://localhost:8100/index.html")
+    webbrowser.open(f"http://localhost:8100/index.html?file={file}")
 
 if __name__ == "__main__":
     parser = ArgumentParser(prog="sagedeps", description="A program top help manage SageMath dependencies.")
@@ -111,36 +122,34 @@ if __name__ == "__main__":
         help="Finds cycles starting at given node."
     )
     parser.add_argument(
-        "--gm", "--generate-modules",
-        nargs="?",
-        const=MODULE_JSON_SRC,
-        default=False,
+        "-gm", "--generate-modules",
+        action="store_true",
         dest="generate_modules", 
         help="Generate a modules file. Can optionally pass in destination file."
     )
     parser.add_argument(
-        "--gi", "--generate-imports",
-        nargs="?",
-        const=IMPORT_MAP_SRC,
-        default=False,
+        "-gi", "--generate-imports",
+        action="store_true",
         dest="generate_imports", 
         help="Generate an imports file. Can optionally pass in destination file."
     )
     parser.add_argument(
-        "--gd", "--generate-dependencies",
-        nargs="?",
-        const=DEPENDENCIES_JSON,
-        default=False,
+        "-gd", "--generate-dependencies",
+        action="store_true",
         dest="generate_dependencies", 
         help="Generate a dependencies file. Can optionally pass in destination file."
     )
     parser.add_argument(
-        "--gg", "--generate-graph",
-        nargs="?",
-        const=GRAPH_JSON,
-        default=False,
+        "-gg", "--generate-graph",
+        action="store_true",
         dest="generate_graph", 
         help="Generate an graph file. Can optionally pass in destination file."
+    )
+    parser.add_argument(
+        "-gdg", "--generate-dependency-graph",
+        nargs=3,
+        dest="generate_dependency_graph", 
+        help="Generate an tree file."
     )
     parser.add_argument(
         "--ff",
@@ -152,8 +161,10 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "-view", "--view",
+        nargs="?",
+        const="graph.json",
+        default=False,
         dest="show_view",
-        action="store_true",
         help="Runs a cytoscape.js instance.")
 
     parser.add_argument("--verbose", action="store_true", help="Enable verbose output.")
@@ -168,7 +179,7 @@ if __name__ == "__main__":
     if args.modules_source:
         MODULE_JSON_SRC = args.modules_source
     if args.generate_modules:
-        create_module_class_map(args.generate_modules)
+        create_module_class_map(args.output_file or MODULE_JSON_SRC)
     
     Loader.initialize(scorer=DefaultScorer())
     if args.filter_source:
@@ -192,14 +203,21 @@ if __name__ == "__main__":
             )
         )
     if args.generate_dependencies:
-        create_dependencies(args.generate_dependencies)
+        create_dependencies(args.output_file or DEPENDENCIES_JSON)
     if args.generate_imports:
-        create_import_map(args.generate_imports)
+        create_import_map(args.output_file or IMPORT_MAP_SRC)
     if args.generate_graph:
-        generate_graph(args.generate_graph, filter)
+        generate_graph(filter=filter)
+    if args.generate_dependency_graph:
+        generate_tree(
+            args.generate_dependency_graph[0], 
+            args.generate_dependency_graph[1], 
+            args.generate_dependency_graph[2],
+            args.output_file or GRAPH_DIR/"dep-graph.json"
+        )
 
     if args.show_view:
-        threading.Thread(target=open_browser, daemon=True).start()
+        threading.Thread(target=open_browser, daemon=True, args=[args.show_view]).start()
         run_server()
 
     if args.output_file:

@@ -198,5 +198,6 @@ cython_debug/
 
 # local tests
 test/
+tmp/
 
 python/test.py

@@ -17,14 +17,16 @@ class DistanceAnalyzer(GraphAnalyzer):
             filter: Filter = PathFilter(),
             edge_types: List[Relation] | None = None,
             edge_weights: List[int] | None = None,
-            upstream: bool = True
+            direction: str = "up"
         ):
         super().__init__(filter, edge_types=edge_types, weight_by_strength=False, weights=edge_weights)
         self._starting_node = starting_node
         self._max_distance = max_distance
-        if upstream:
+        if direction == "up":
             self._graph.reverse(copy=False)
             self._adjacency_matrix.transpose(copy=False)
+        elif direction == "all":
+            self._graph = self._graph.to_undirected()
 
     def _run_analysis(self) -> dict:
         distances = nx.single_source_shortest_path_length(self._graph, self._starting_node, self._max_distance)

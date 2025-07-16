@@ -4,6 +4,7 @@ from deps.filter.filter import Filter, EmptyFilter
 from deps.filter.balance import Balance
 from deps.filter.score_filter import ScoreFilter
 from deps.filter.connectors import Not, Or, All
+from deps.filter.distance_filter import DistanceFilter
 from deps.filter.degree_filter import MinFanIn, MinFanOut
 from deps.filter.depth_filter import MinDepthFilter, MaxDepthFilter
 from deps.filter.path_filter import PathFilter
@@ -92,6 +93,15 @@ def parse_filter(name, data):
                 int(data.get("limit")),
                 [float(v) for v in weights] if weights else None,
                 *[parse_filter(x["name"], x["data"]) for x in data.get("filters", [])]
+            )
+        case "distance":
+            source = data.get("source")
+            distance = data.get("distance")
+            direction = data.get("direction", "all")
+            result = DistanceFilter(
+                source=source,
+                distance=int(distance),
+                direction=direction
             )
         case _:
             raise Exception(f"Unknown filter name {name}")

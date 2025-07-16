@@ -1,4 +1,10 @@
+function getQueryParam(name) {
+  const params = new URLSearchParams(window.location.search);
+  return params.get(name);
+}
 
+const defaultFile = 'graph.json';
+const file = getQueryParam('file') || defaultFile;
 
 window.addEventListener("beforeunload", () => {
     navigator.sendBeacon("/closed");
@@ -310,7 +316,7 @@ Array.from(checkboxes)
 );
 console.log(settings);
 
-return fetch("graph.json")
+return fetch(file)
 .then(res => res.json())
 .then(data => {
 const filteredData = getFilteredElements(data, settings);
@@ -476,7 +482,7 @@ cy.on('tap', 'node', function(evt) {
  * Initial fetch based on default filter settings. 
  * Loads and renders the nodes and edges in collapsed form.
  */
-fetch("graph.json")
+fetch(file)
     .then(res => res.json())
     .then(data => {
     console.log("Data loaded")

@@ -1,0 +1,8 @@
+{
+    "name": "path",
+    "data": "sage.rings",
+    "filter": {
+        "name": "score",
+        "data": 100
+    }
+}
