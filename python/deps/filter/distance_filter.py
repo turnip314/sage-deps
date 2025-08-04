@@ -18,3 +18,13 @@ class DistanceFilter(Filter):
 
     def _applies_to_self(self, object: 'Importable') -> bool:
         return object.full_path_name in self._results
+    
+    @classmethod
+    def from_json(cls, data, filters: list[dict]) -> "Filter":
+        from deps.filter.loader import get_filter_class
+        subfilter_classes = [get_filter_class(filter["name"]) for filter in filters]
+        this = cls(data["source"], int(data["distance"]), direction = data.get("direction", "all"))
+        for subfilter_cls, filter in zip(subfilter_classes, filters):
+            this.add(subfilter_cls.from_json(filter["data"], filter.get("filters", [])))
+        
+        return this

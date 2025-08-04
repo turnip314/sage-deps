@@ -4,7 +4,7 @@ This is a ![SageMath](https://www.sagemath.org/) dependency analysis tool used f
 
 # Installation
 
-To install, simply download or clone the repository. The package requires ![numpy](https://numpy.org/), ![scipy](https://scipy.org/), ![networkx](https://networkx.org/), and ~[scikit-network](https://pypi.org/project/scikit-network/).
+To install, simply download or clone the repository. The package requires ![numpy](https://numpy.org/), ![scipy](https://scipy.org/), ![networkx](https://networkx.org/), and ![scikit-network](https://pypi.org/project/scikit-network/).
 
 # Setup and Usage
 
@@ -46,3 +46,4 @@ options:
 ```
 
 # Example Usage
+

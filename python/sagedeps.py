@@ -106,66 +106,95 @@ def open_browser(file="graph.json"):
 
 if __name__ == "__main__":
     parser = ArgumentParser(prog="sagedeps", description="A program top help manage SageMath dependencies.")
-    parser.add_argument("-s", "--sage-source", dest="sage_source", help="The source file of Sage.")
-    parser.add_argument("-m", "--modules-source", dest="modules_source",help="Specify the modules file.")
-    parser.add_argument("-o", "--output-file", dest="output_file",help="Specify the file to dump the output.")
+    parser.add_argument(
+        "-s", 
+        "--sage-source", 
+        metavar="SOURCE_FILE", 
+        default=SAGE_SRC, 
+        dest="sage_source", 
+        help="The source file of Sage."
+    )
+    parser.add_argument(
+        "-m", 
+        "--modules-source", 
+        metavar="SOURCE_FILE", 
+        default=MODULE_JSON_SRC, 
+        dest="modules_source",
+        help="Specify the modules file."
+    )
+    parser.add_argument(
+        "-g", 
+        "--graph-source", 
+        metavar="SOURCE_FILE", 
+        default=GRAPH_JSON, 
+        dest="graph_source",
+        help="Specify the graph file."
+    )
+    parser.add_argument(
+        "-o", 
+        "--output-file", 
+        metavar="OUTPUT_FILE", 
+        dest="output_file",
+        help="Specify the file to dump the output."
+    )
     parser.add_argument(
         "-up", 
         nargs=2,
+        metavar=("SOURCE_CLASS", "DEPTH"),
         dest="up_dependency",
-        help="Generates a breadth-first dependency tree rooted at a particular node, up to a given depth."
+        help="Generates a breadth-first dependency tree rooted at SOURCE_CLASS, up to a given depth."
     )
     parser.add_argument(
         "-cc", 
         nargs=2,
+        metavar=("SOURCE_CLASS", "TIMEOUT"),
         dest="check_cycles",
-        help="Finds cycles starting at given node."
+        help="Finds cycles starting at SOURCE_CLASS with a timeout of TIMEOUT seconds."
     )
     parser.add_argument(
         "-gm", "--generate-modules",
         action="store_true",
         dest="generate_modules", 
-        help="Generate a modules file. Can optionally pass in destination file."
+        help="Generate a modules file. Will output to default location or `--modules-source`."
     )
     parser.add_argument(
         "-gi", "--generate-imports",
         action="store_true",
         dest="generate_imports", 
-        help="Generate an imports file. Can optionally pass in destination file."
+        help="Generate an imports file."
     )
     parser.add_argument(
         "-gd", "--generate-dependencies",
         action="store_true",
         dest="generate_dependencies", 
-        help="Generate a dependencies file. Can optionally pass in destination file."
+        help="Generate a dependencies file."
     )
     parser.add_argument(
         "-gg", "--generate-graph",
         action="store_true",
         dest="generate_graph", 
-        help="Generate an graph file. Can optionally pass in destination file."
+        help="Generate an graph file. Will output to default location or `--graph-source`."
     )
     parser.add_argument(
         "-gdg", "--generate-dependency-graph",
         nargs=3,
+        metavar=("SOURCE", "DISTANCE", "DIRECTION"),
         dest="generate_dependency_graph", 
-        help="Generate an tree file."
+        help="Generate a dependency graph rooted at a SOURCE node."
     )
     parser.add_argument(
-        "--ff",
-        nargs="?",
-        dest="filter_source", 
-        const=FILTER_JSON,
-        default=False,
+        "-f", "--ff",
+        dest="filter_source",
+        metavar="SOURCE_FILE",
+        default=FILTER_JSON,
         help="Load a custom filter. If not, a default filter is used."
     )
     parser.add_argument(
         "-view", "--view",
-        nargs="?",
-        const="graph.json",
-        default=False,
+        action="store_true",
         dest="show_view",
-        help="Runs a cytoscape.js instance.")
+        help="Run a cytoscape.js instance. Specify graph source using `--graph-source`."
+    )
 
     parser.add_argument("--verbose", action="store_true", help="Enable verbose output.")
     
@@ -179,12 +208,13 @@ if __name__ == "__main__":
     if args.modules_source:
         MODULE_JSON_SRC = args.modules_source
     if args.generate_modules:
-        create_module_class_map(args.output_file or MODULE_JSON_SRC)
+        create_module_class_map(args.modules_source)
     
     Loader.initialize(scorer=DefaultScorer())
-    if args.filter_source:
+    try:
         filter = from_json_file(args.filter_source)
-    else:
+    except:
+        print("Could not load filter. Using a custom default.")
         filter = get_default_filter()
 
     if args.up_dependency:
@@ -207,17 +237,17 @@ if __name__ == "__main__":
     if args.generate_imports:
         create_import_map(args.output_file or IMPORT_MAP_SRC)
     if args.generate_graph:
-        generate_graph(filter=filter)
+        generate_graph(args.graph_source, filter=filter)
     if args.generate_dependency_graph:
         generate_tree(
             args.generate_dependency_graph[0], 
             args.generate_dependency_graph[1], 
             args.generate_dependency_graph[2],
-            args.output_file or GRAPH_DIR/"dep-graph.json"
+            args.graph_source or GRAPH_DIR/"dep-graph.json"
         )
 
     if args.show_view:
-        threading.Thread(target=open_browser, daemon=True, args=[args.show_view]).start()
+        threading.Thread(target=open_browser, daemon=True, args=[args.graph_source]).start()
         run_server()
 
     if args.output_file:

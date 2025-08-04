@@ -1,14 +1,6 @@
 import json
-
+from typing import Type
 from deps.filter.filter import Filter, EmptyFilter
-from deps.filter.balance import Balance
-from deps.filter.score_filter import ScoreFilter
-from deps.filter.connectors import Not, Or, All
-from deps.filter.distance_filter import DistanceFilter
-from deps.filter.degree_filter import MinFanIn, MinFanOut
-from deps.filter.depth_filter import MinDepthFilter, MaxDepthFilter
-from deps.filter.path_filter import PathFilter
-from deps.model.dependency import Relation
 
 def parse_metric(name: str):
     match name:
@@ -17,105 +9,52 @@ def parse_metric(name: str):
         case _:
             return lambda object: 0
 
-def parse_filter(name, data):
+def get_filter_class(name) -> Type[Filter]:
+    from deps.filter.balance import Balance
+    from deps.filter.score_filter import ScoreFilter
+    from deps.filter.connectors import Not, Or, All
+    from deps.filter.distance_filter import DistanceFilter
+    from deps.filter.degree_filter import MinFanIn, MinFanOut
+    from deps.filter.depth_filter import MinDepthFilter, MaxDepthFilter
+    from deps.filter.path_filter import NameContains, PathFilter
+    from deps.model.dependency import Relation
     result: Filter
     match name:
         case "empty":
-            result = EmptyFilter()
+            return EmptyFilter
         case "score":
-            result = ScoreFilter(
-                min_score=data
-            )
+            return ScoreFilter
         case "path":
-            result = PathFilter(
-                path=data
-            )
+            return PathFilter
         case "contains":
-            result = NameContains(
-                name=data
-            )
+            return NameContains
         case "min-depth":
-            result = MinDepthFilter(
-                min_depth=data
-            )
+            return MinDepthFilter
         case "max-depth":
-            result = MaxDepthFilter(
-                min_depth=data
-            )
+            return MaxDepthFilter
         case "in-deg":
-            result = MinFanIn(
-                deg=data.get("min-deg", 0) or data,
-                relations=data.get("relations") or [
-                    Relation.DECLARED_SUB_IMPORT, 
-                    Relation.DECLARED_TOP_IMPORT, 
-                    Relation.CLASS_ATTRIBUTE, 
-                    Relation.INHERITANCE
-                ]
-            )
+            return MinFanIn
         case "out-deg":
-            result = MinFanOut(
-                deg=data.get("max-deg", 0) if isinstance(data, dict) else data,
-                relations=data.get("relations") or [
-                    Relation.DECLARED_SUB_IMPORT, 
-                    Relation.DECLARED_TOP_IMPORT, 
-                    Relation.CLASS_ATTRIBUTE, 
-                    Relation.INHERITANCE
-                ]
-            )
+            return MinFanOut
         case "or":
-            result = Or(
-                *[
-                    parse_filter(
-                        x["name"], x["data"]
-                    ) for x in data
-                ]
-            )
+            return Or
         case "all":
-            result = All(
-                *[
-                    parse_filter(
-                        x["name"], x["data"]
-                    ) for x in data
-                ]
-            )
+            return All
         case "not":
-            result = Not(
-                *[
-                    parse_filter(
-                        x["name"], x["data"]
-                    ) for x in data
-                ]
-            )
+            return Not
         case "balance":
-            weights = data.get("weights", None)
-            result = Balance(
-                parse_metric(data.get("metric", None)),
-                int(data.get("limit")),
-                [float(v) for v in weights] if weights else None,
-                *[parse_filter(x["name"], x["data"]) for x in data.get("filters", [])]
-            )
+            return Balance
         case "distance":
-            source = data.get("source")
-            distance = data.get("distance")
-            direction = data.get("direction", "all")
-            result = DistanceFilter(
-                source=source,
-                distance=int(distance),
-                direction=direction
-            )
+            return DistanceFilter
         case _:
             raise Exception(f"Unknown filter name {name}")
     
-    if "filter" in data:
-        subdata = data["filter"]
-        result.add(parse_filter(subdata.name, subdata.data))
 
     return result
 
-def from_json_file(file_path: str) -> Filter:
-    with open(file_path, "r") as f:
-        filter_dict = json.loads(f.read())
-        return parse_filter(filter_dict["name"], filter_dict["data"])
-
-    
+def from_json_file(file):
+    with open(file, "r") as f:
+        filter = json.loads(f.read())
+        filter_cls = get_filter_class(filter["name"])
+        return filter_cls.from_json(filter["data"], filter.get("filters", []))
 

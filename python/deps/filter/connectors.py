@@ -15,6 +15,17 @@ class Or(Filter):
                 filter.applies_to(object) for filter in self._filters
             ]
         )
+    
+    @classmethod
+    def from_json(cls, data, filters: list[dict]) -> "Filter":
+        from deps.filter.loader import get_filter_class
+        if filters:
+            print("Connector filters do not take `filters` as parameter. Use `data` instead.")
+        subfilters = [
+            get_filter_class(data["name"]).from_json(filter["data"], filter.get("filters", [])) 
+            for filter in filters
+        ]
+        return cls(*subfilters)
 
 class Not(Filter):
     def __init__(self, *args):
@@ -28,6 +39,17 @@ class Not(Filter):
             ]
         )
 
+    @classmethod
+    def from_json(cls, data, filters: list[dict]) -> "Filter":
+        from deps.filter.loader import get_filter_class
+        if filters:
+            print("Connector filters do not take `filters` as parameter. Use `data` instead.")
+        subfilters = [
+            get_filter_class(data["name"]).from_json(filter["data"], filter.get("filters", [])) 
+            for filter in filters
+        ]
+        return cls(*subfilters)
+
 class All(Filter):
     def __init__(self, *args):
         super().__init__()
@@ -39,3 +61,14 @@ class All(Filter):
                 filter.applies_to(object) for filter in self._filters
             ]
         )
+    
+    @classmethod
+    def from_json(cls, data, filters: list[dict]) -> "Filter":
+        from deps.filter.loader import get_filter_class
+        if filters:
+            print("Connector filters do not take `filters` as parameter. Use `data` instead.")
+        subfilters = [
+            get_filter_class(data["name"]).from_json(filter["data"], filter.get("filters", [])) 
+            for filter in filters
+        ]
+        return cls(*subfilters)

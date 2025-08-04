@@ -42,4 +42,27 @@ class Balance(Filter):
             limit = self._limit - len(returned_objects)
 
         return list(returned_objects)
+    
+    @classmethod
+    def from_json(cls, data, filters: list[dict]) -> "Filter":
+        def parse_metric(name: str):
+            match name:
+                case "score":
+                    return lambda object: object.get_score
+                case _:
+                    return lambda object: 0
+        from deps.filter.loader import get_filter_class
+        if filters:
+            print("Connector filters do not take `filters` as parameter. Use `data` instead.")
+        subfilters = [
+            get_filter_class(data["name"]).from_json(filter["data"], filter.get("filters", [])) 
+            for filter in filters
+        ]
+        weights = data.get("weights", None)
+        return cls(
+            parse_metric(data.get("metric", None)),
+            int(data.get("limit")),
+            [float(v) for v in weights] if weights else None,
+            *subfilters
+        )
 

@@ -11,3 +11,7 @@ class ScoreFilter(Filter):
 
     def _applies_to_self(self, object: 'Importable') -> bool:
         return object.get_score >= self._min_score
+
+    @classmethod
+    def from_json(cls, data, filters: list[dict]) -> "Filter":
+        return super().from_json(int(data), filters)
