@@ -9,8 +9,17 @@ from deps.data import Data
 
 
 class Loader:
+    """
+    The `Loaedr` builds all run-time data structures for the Sage dependency graph
+    representation. It assumes the existence of a modules.json file located in
+    resources/. `Loader.initialize()` must be called before performing any dependency
+    analysis (including cytoscape graph generation). 
+    """
     @classmethod
     def initialize(cls, scorer = None):
+        """
+        Initialize all data structures and scores each `SageClass` and `Module`.
+        """
         cls.load_all_modules()
         cls.load_all_classes()
         cls.load_all_instantiations()
@@ -24,8 +33,8 @@ class Loader:
 
     @classmethod
     def load_all_modules(cls):
-        """Creates `Module` objects for every module found in `python_cython_modules.json`.
-        Loads in their name and path, but no other info
+        """Creates `Module` objects for every module found in `modules.json`.
+        Loads in their name, path, and file extension for files.
         """
         base_module = Module("sage", None)
         Data.add_module("sage", base_module)
@@ -51,7 +60,7 @@ class Loader:
     @classmethod
     def load_all_classes(cls):
         """
-        Creates `SageClass` objects for every class found in `python_cython_modules.json`.
+        Creates `SageClass` objects for every class found in `modules.json`.
         Loads in their name, path, and parent module.
         """
         with open(MODULE_JSON_SRC) as f:
@@ -71,6 +80,11 @@ class Loader:
 
     @classmethod
     def load_all_instantiations(cls):
+        """
+        Loads all run-time class instantiations that occur at the top level. This is 
+        often used for Singleton classes like `ZZ = IntegerRing_class` or classes with
+        aliases. The `Data` class will resolve aliases.
+        """
         with open(MODULE_JSON_SRC) as f:
             modules_dict = json.loads(f.read())
             for module_name in modules_dict.keys():
@@ -146,6 +160,12 @@ class Loader:
 
     @classmethod
     def add_interfaces(cls):
+        """
+        Adds metadata about class interface usage. For example, classes with a Singular or
+        Macaualy2 interface will generally inherit a base `_singular_repr` or
+        `_macaulay2_repr` class. This still needs more work as we detect how other
+        intefaces are implemented into core Sage.
+        """
         for sage_class in Data.get_classes_filtered():
             class_name = sage_class.full_path_name
             singular_repr_name = f"{class_name}_singular_repr"
@@ -157,6 +177,22 @@ class Loader:
 
     @classmethod
     def create_dependencies(cls):
+        """
+        Add all dependency relations between classes. Note that the `SageClass`
+        itself will resolve all dependencies and take only that of highest priority.
+
+        Dependency strength is obtained in several ways:
+
+        First, we obtain a map of `alias`:`SageClass` objects which are all classes
+        that can be referenced by the current class (these come from import relations).
+
+        For a class defined in `modules.json`, there will be an 'inherited' field
+        stating the class alias being inherited.
+
+        Each class will have a list of associated symbols invoked in its definition.
+        This is found in `modules.json` under 'attributes' and 'symbols'.
+
+        """
         with open(MODULE_JSON_SRC) as f:
             modules_dict = json.loads(f.read())
             for module_name in modules_dict.keys():
@@ -243,6 +279,9 @@ class Loader:
 
     @classmethod
     def load_commit_metadata(cls):
+        """
+        Fetches commit history data obtained via pydrill.
+        """
         def process_path_name(path_name):
             return ".".join(path_name.split(".")[0].split("/")[1:])
 
@@ -257,7 +296,10 @@ class Loader:
     @classmethod
     def collect_all_rst_files(cls, section_path):
         """
-        Recursively collect all .rst files included in this reference section.
+        Recursively collect all .rst files included in this reference section. These tell us
+        which base path to find the documentation page for a particular class.
+
+        Typically used as a subroutine of `parse_rst_content`.
         """
         visited = set()
         pending = ["index.rst"]
@@ -287,6 +329,9 @@ class Loader:
     
     @classmethod
     def parse_rst_content(cls):
+        """
+        Parses content of each .rist file.
+        """
         result = {}
         for section in Path(LOCAL_DOC_ROOT).iterdir():
             index = section / "index.rst"
@@ -363,6 +408,16 @@ class Loader:
     
     @classmethod
     def dump_dependencies(cls):
+        """
+        Dumps the dependency structure into a json of the form
+        {
+            "<sage-full-class-path>": {
+                "sub-level-import": [...],
+                ...,
+                "inheritance": [...].
+            }
+        }
+        """
         result = {}
         sage_class: SageClass
         for path, sage_class in Data.classes.items():
