@@ -214,8 +214,6 @@ def main():
         Settings.set_config(args.set_config[0], args.set_config[1])
 
     verbose = args.verbose
-    SAGE_SRC = args.sage_source
-    MODULE_JSON_SRC = args.modules_source
     if args.generate_modules:
         create_module_class_map(args.modules_source)
     
