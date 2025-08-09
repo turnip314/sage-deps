@@ -198,7 +198,7 @@ def main():
     )
     parser.add_argument(
         "-set-config",
-        nargs=3,
+        nargs=2,
         metavar=("NAME", "VALUE"),
         dest="set_config",
         help="Updates the configuration file."
