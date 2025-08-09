@@ -2,6 +2,8 @@
 
 This is a ![SageMath](https://www.sagemath.org/) dependency analysis tool used for understanding Sage's structure. It can be used to detect circular imports, upstream dependencies, and provide various dependency-graph metrics including PageRank.
 
+**Warning:** This package is still in its testing phase, and may have unexpected behaviour.
+
 # Installation
 
 ## Dependencies
@@ -22,8 +24,7 @@ The package requires access to the ![SageMath repository](https://github.com/sag
 
 ## Getting started
 
-To ensure the package is successfully installed, run `sdeps`. It should output a blank line by default.
-
+To ensure the package is successfully installed, run `sdeps`. It should output a blank line by default. The 
 
 
 ## 

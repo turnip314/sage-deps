@@ -106,14 +106,12 @@ def open_browser(file="graph.json"):
     webbrowser.open(f"http://localhost:8100/index.html?file={file}")
 
 def main():
-    global SAGE_SRC
-    global MODULE_JSON_SRC
     parser = ArgumentParser(prog="sdeps", description="A program top help manage SageMath dependencies.")
     parser.add_argument(
         "-s", 
         "--sage-source", 
         metavar="SOURCE_FILE", 
-        default=SAGE_SRC, 
+        default=Settings.SAGE_SRC, 
         dest="sage_source", 
         help="The source file of Sage."
     )
@@ -121,7 +119,7 @@ def main():
         "-m", 
         "--modules-source", 
         metavar="SOURCE_FILE", 
-        default=MODULE_JSON_SRC, 
+        default=Settings.MODULE_JSON_SRC, 
         dest="modules_source",
         help="Specify the modules file."
     )

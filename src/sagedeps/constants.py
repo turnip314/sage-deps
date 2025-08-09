@@ -44,5 +44,4 @@ class Settings:
         with open(config_file, "w") as f:
             config = f.write(json.dumps(config, 4))
 
-
 Settings.initialize()
