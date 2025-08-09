@@ -1,4 +1,5 @@
 from sagedeps.analysis.betweeness import BetweennessAnalyzer
+from sagedeps.analysis.cliques import CliquesAnalyzer
 from sagedeps.analysis.clustering import ClusteringAnalyzer
 from sagedeps.analysis.cycles import CyclesAnalyzer
 from sagedeps.analysis.distance import DistanceAnalyzer

@@ -5,9 +5,10 @@ import time
 import webbrowser
 from argparse import ArgumentParser
 from http.server import HTTPServer, SimpleHTTPRequestHandler
+from pathlib import Path
 
 from sagedeps.analysis import *
-from sagedeps.constants import *
+from sagedeps.constants import Settings
 from sagedeps.deps.parser import Parser
 from sagedeps.deps.loader import Loader
 from sagedeps.deps.graphics import create_class_digraph, create_module_digraph, create_graph_json
@@ -71,7 +72,7 @@ def create_dependencies(out_file):
 def show_module_graph(depth=3, path="sage"):
     create_module_digraph(depth=depth, path=path)
 
-def generate_graph(out_file=GRAPH_JSON, filter=get_default_filter()):
+def generate_graph(out_file=Settings.GRAPH_JSON, filter=get_default_filter()):
     result = create_graph_json(
         filter
     )
@@ -79,7 +80,7 @@ def generate_graph(out_file=GRAPH_JSON, filter=get_default_filter()):
     with open(out_file, "w") as f:
         f.write(json.dumps(result, indent=4))
 
-def generate_tree(source, distance, direction, out_file=GRAPH_DIR/"tree.json"):
+def generate_tree(source, distance, direction, out_file=Settings.GRAPH_DIR/"tree.json"):
     filter = DistanceFilter(
         source, int(distance), direction
     )
@@ -95,7 +96,7 @@ def run_graph_analysis(analyzer: GraphAnalyzer):
 
 def run_server():
     global httpd
-    handler_class = functools.partial(MyHandler, directory=GRAPH_DIR)
+    handler_class = functools.partial(MyHandler, directory=Settings.GRAPH_DIR)
     httpd = HTTPServer(('localhost', 8100), handler_class)
     print("Launching cytoscape viewer...")
     httpd.serve_forever()
@@ -107,7 +108,7 @@ def open_browser(file="graph.json"):
 def main():
     global SAGE_SRC
     global MODULE_JSON_SRC
-    parser = ArgumentParser(prog="sagedeps", description="A program top help manage SageMath dependencies.")
+    parser = ArgumentParser(prog="sdeps", description="A program top help manage SageMath dependencies.")
     parser.add_argument(
         "-s", 
         "--sage-source", 
@@ -128,7 +129,7 @@ def main():
         "-g", 
         "--graph-source", 
         metavar="SOURCE_FILE", 
-        default=GRAPH_JSON, 
+        default=Settings.GRAPH_JSON, 
         dest="graph_source",
         help="Specify the graph file."
     )
@@ -188,7 +189,7 @@ def main():
         "-f", "--ff",
         dest="filter_source",
         metavar="SOURCE_FILE",
-        default=FILTER_JSON,
+        default=Settings.FILTER_JSON,
         help="Load a custom filter. If not, a default filter is used."
     )
     parser.add_argument(
@@ -197,12 +198,22 @@ def main():
         dest="show_view",
         help="Run a cytoscape.js instance. Specify graph source using `--graph-source`."
     )
+    parser.add_argument(
+        "-set-config",
+        nargs=3,
+        metavar=("NAME", "VALUE"),
+        dest="set_config",
+        help="Updates the configuration file."
+    )
 
     parser.add_argument("--verbose", action="store_true", help="Enable verbose output.")
     
     args = parser.parse_args()
 
     result = ""
+
+    if args.set_config:
+        Settings.set_config(args.set_config[0], args.set_config[1])
 
     verbose = args.verbose
     SAGE_SRC = args.sage_source
@@ -233,9 +244,9 @@ def main():
             )
         )
     if args.generate_dependencies:
-        create_dependencies(args.output_file or DEPENDENCIES_JSON)
+        create_dependencies(args.output_file or Settings.DEPENDENCIES_JSON)
     if args.generate_imports:
-        create_import_map(args.output_file or IMPORT_MAP_SRC)
+        create_import_map(args.output_file or Settings.IMPORT_MAP_SRC)
     if args.generate_graph:
         generate_graph(args.graph_source, filter=filter)
     if args.generate_dependency_graph:
@@ -243,7 +254,7 @@ def main():
             args.generate_dependency_graph[0], 
             args.generate_dependency_graph[1], 
             args.generate_dependency_graph[2],
-            args.graph_source or GRAPH_DIR/"dep-graph.json"
+            args.graph_source or Settings.GRAPH_DIR/"dep-graph.json"
         )
 
     if args.show_view:

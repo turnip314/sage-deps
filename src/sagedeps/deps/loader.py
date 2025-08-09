@@ -1,6 +1,7 @@
 import json
+from pathlib import Path
 
-from sagedeps.constants import *
+from sagedeps.constants import Settings
 from sagedeps.deps.model.dependency import Dependency, Relation
 from sagedeps.deps.model.importable import Importable
 from sagedeps.deps.model.module import File, Module
@@ -38,7 +39,7 @@ class Loader:
         """
         base_module = Module("sage", None)
         Data.add_module("sage", base_module)
-        with open(MODULE_JSON_SRC, "r") as f:
+        with open(Settings.MODULE_JSON_SRC, "r") as f:
             modules_dict = json.loads(f.read())
             for module_name in modules_dict.keys():
                 submodule_names = module_name.split(".")[1:]
@@ -63,7 +64,7 @@ class Loader:
         Creates `SageClass` objects for every class found in `modules.json`.
         Loads in their name, path, and parent module.
         """
-        with open(MODULE_JSON_SRC) as f:
+        with open(Settings.MODULE_JSON_SRC) as f:
             modules_dict = json.loads(f.read())
             for module_name in modules_dict.keys():
                 py_cls = PythonClass if modules_dict[module_name]["extension"] == ".py" else CythonClass
@@ -85,7 +86,7 @@ class Loader:
         often used for Singleton classes like `ZZ = IntegerRing_class` or classes with
         aliases. The `Data` class will resolve aliases.
         """
-        with open(MODULE_JSON_SRC) as f:
+        with open(Settings.MODULE_JSON_SRC) as f:
             modules_dict = json.loads(f.read())
             for module_name in modules_dict.keys():
                 instantiations = modules_dict[module_name]["instantiations"]
@@ -114,7 +115,7 @@ class Loader:
         method. Otherwise, it will only store `from` imports and explicit
         imports.
         """
-        with open(MODULE_JSON_SRC) as f:
+        with open(Settings.MODULE_JSON_SRC) as f:
             modules_dict = json.loads(f.read())
             for module_name in modules_dict.keys():
                 module = Data.get_module(module_name)
@@ -193,7 +194,7 @@ class Loader:
         This is found in `modules.json` under 'attributes' and 'symbols'.
 
         """
-        with open(MODULE_JSON_SRC) as f:
+        with open(Settings.MODULE_JSON_SRC) as f:
             modules_dict = json.loads(f.read())
             for module_name in modules_dict.keys():
                 module = Data.get_module(module_name)
@@ -285,7 +286,7 @@ class Loader:
         def process_path_name(path_name):
             return ".".join(path_name.split(".")[0].split("/")[1:])
 
-        with open(COMMIT_METADATA) as f:
+        with open(Settings.COMMIT_METADATA) as f:
             commit_metadata_raw = json.loads(f.read())
             commit_metadata = {
                 process_path_name(key) : value for key, value in commit_metadata_raw.items()
@@ -333,7 +334,7 @@ class Loader:
         Parses content of each .rist file.
         """
         result = {}
-        for section in Path(LOCAL_DOC_ROOT).iterdir():
+        for section in Path(Settings.LOCAL_DOC_ROOT).iterdir():
             index = section / "index.rst"
             if not index.exists():
                 continue
@@ -355,7 +356,7 @@ class Loader:
         module_path = sage_class.module.full_path_name
         html_path = module_path.replace(".", "/") + ".html"
         for reference in Data.get_rst_references(module_path):
-            full_url = f"{DOC_BASE_URL}/{reference}/{html_path}#{module_path}"
+            full_url = f"{Settings.DOC_BASE_URL}/{reference}/{html_path}#{module_path}"
             matches.append(full_url)
 
         return matches
@@ -376,7 +377,7 @@ class Loader:
         }
         """
         result = {}
-        with open(MODULE_JSON_SRC) as f:
+        with open(Settings.MODULE_JSON_SRC) as f:
             modules_dict = json.loads(f.read())
             for module_name in modules_dict.keys():
                 module = Data.get_module(module_name)

@@ -1,6 +1,5 @@
 from typing import List
 
-from sagedeps.constants import *
 from sagedeps.deps.data import Data
 from sagedeps.deps.filter import Filter, PathFilter, MinDepthFilter
 from sagedeps.deps.model.dependency import Dependency, Relation

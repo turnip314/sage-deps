@@ -4,14 +4,32 @@ This is a ![SageMath](https://www.sagemath.org/) dependency analysis tool used f
 
 # Installation
 
-To install, simply download or clone the repository. The package requires ![numpy](https://numpy.org/), ![scipy](https://scipy.org/), ![networkx](https://networkx.org/), and ![scikit-network](https://pypi.org/project/scikit-network/).
+## Dependencies
+The package requires ![numpy](https://numpy.org/), ![scipy](https://scipy.org/), ![networkx](https://networkx.org/), and ![scikit-network](https://pypi.org/project/scikit-network/).
 
-# Setup and Usage
+## Install from PyPi:
+Run `pip install sage-deps` to install as a pypi package. Make sure the script `sdeps.exe` is added to PATH to run the `sdeps` command.
+
+## Manual Install
+To install, simply download or clone the repository. Navigate to the root folder (where `pyproject.toml` lives) and run `pip install .`.
+
+## Additional Setup
 
 The package requires access to the ![SageMath repository](https://github.com/sagemath/sage). By default, it assumes you have the repository cloned to the same parent directory as your sage-deps folder. You may modify this by modifying the environment variable `SAGEBASE` in `sagedeps/python/constants.py`, or specifying the Sage installation directory using options (see below).
 
+
+# Command Line Usage
+
+## Getting started
+
+To ensure the package is successfully installed, run `sdeps`. It should output a blank line by default.
+
+
+
+## 
+
 ```
-usage: sagedeps [-h] [-s SAGE_SOURCE] [-m MODULES_SOURCE] [-o OUTPUT_FILE] [-up UP_DEPENDENCY UP_DEPENDENCY] [-cc CHECK_CYCLES CHECK_CYCLES] [-gm] [-gi]
+usage: sdeps [-h] [-s SAGE_SOURCE] [-m MODULES_SOURCE] [-o OUTPUT_FILE] [-up UP_DEPENDENCY UP_DEPENDENCY] [-cc CHECK_CYCLES CHECK_CYCLES] [-gm] [-gi]
                 [-gd] [-gg] [-gdg GENERATE_DEPENDENCY_GRAPH GENERATE_DEPENDENCY_GRAPH GENERATE_DEPENDENCY_GRAPH] [--ff [FILTER_SOURCE]]
                 [-view [SHOW_VIEW]] [--verbose]
 

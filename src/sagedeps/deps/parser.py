@@ -2,7 +2,7 @@ import re
 import os
 from typing import List
 
-from sagedeps.constants import *
+from sagedeps.constants import Settings
 
 import ast
 
@@ -15,7 +15,7 @@ class Parser:
     @classmethod
     def pyfile_to_module(cls, path):
         # Convert file path to module name
-        rel_path = os.path.relpath(path, SAGE_SRC)
+        rel_path = os.path.relpath(path, Settings.SAGE_SRC)
         no_ext = os.path.splitext(rel_path)[0]
         parts = no_ext.split(os.sep)
         return ".".join(["sage"] + parts)
@@ -23,7 +23,7 @@ class Parser:
     @classmethod
     def create_python_module_class_map(cls, python=True, cython=True, list_symbols=True):
         module_class_map = {}
-        for dirpath, _, filenames in os.walk(SAGE_SRC):
+        for dirpath, _, filenames in os.walk(Settings.SAGE_SRC):
             for filename in filenames:
                 full_path = os.path.join(dirpath, filename)
                 module_name = cls.pyfile_to_module(full_path)

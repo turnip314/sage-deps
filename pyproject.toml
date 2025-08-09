@@ -13,3 +13,6 @@ dependencies = []
 
 [project.scripts]
 sdeps = "sagedeps.main:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
