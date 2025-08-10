@@ -1,26 +1,38 @@
 import json
+import subprocess
 from pathlib import Path
-this_dir = Path(__file__).parent
-project_root = this_dir.parent.parent
-config_file = project_root/"config.json"
 
 class Settings:
     @classmethod
     def initialize(cls):
-        with open(config_file, "r") as f:
+        this_dir = Path(__file__).parent
+        project_root = this_dir.parent.parent
+        cls._config_file = project_root/"config.json"
+        with open(cls._config_file, "r") as f:
             config = json.loads(f.read())
         
         def get_path(pathname: str):
             base_dir = project_root
             if pathname.startswith("/"):
                 return Path(pathname)
-            elif pathname.startswith("../"):
-                while pathname.startswith("../"):
-                    base_dir = base_dir.parent
-                    pathname = pathname[3:]
+            while pathname.startswith("../"):
+                base_dir = base_dir.parent
+                pathname = pathname[3:]
             return base_dir/pathname
 
         cls.SAGE_BASE = get_path(config.get("sage_path",  "../sage"))
+        # If Sage is not installed at this location, install it
+        if not cls.SAGE_BASE.is_dir():
+            do_clone = input(f"Sage installation not found at {cls.SAGE_BASE}. Would you like to clone it? [y/n]").lower()
+            while do_clone not in "yn":
+                do_clone = input(f"Please respond with [y/n]").lower()
+            
+            if do_clone == "y":
+                subprocess.run(["git", "clone", "https://github.com/sagemath/sage.git", cls.SAGE_BASE], check=True)
+            else:
+                print("Parts of sage-deps will not work without a local copy of the Sage repository.")
+                print("You can specify the Sage installation location by running `sdeps -set-config sage_path <sage-path>`.")
+
         cls.SAGE_SRC = cls.SAGE_BASE/"src"/"sage"
         cls.MODULE_JSON_SRC = get_path(config.get("modules_src",  "resources/modules.json"))
         cls.MODULE_JSON_SRC_TEST = project_root/"resources"/"modules_tmp.json"
@@ -36,15 +48,12 @@ class Settings:
     
     @classmethod
     def set_config(cls, name, value):
-        with open(config_file, "r") as f:
+        with open(cls._config_file, "r") as f:
             config = json.loads(f.read())
         
         config[name] = value
 
-        with open(config_file, "w") as f:
+        with open(cls._config_file, "w") as f:
             config = f.write(json.dumps(config, 4))
 
-try:
-    Settings.initialize()
-except:
-    pass
+Settings.initialize()
