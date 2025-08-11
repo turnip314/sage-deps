@@ -1,5 +1,6 @@
 import functools
 import json
+import os
 import threading
 import time
 import webbrowser
@@ -29,6 +30,9 @@ class MyHandler(SimpleHTTPRequestHandler):
             self.wfile.write(b"Closed received")
             print("Browser was closed or navigated away!")
             threading.Thread(target=httpd.shutdown).start()
+
+def resolve_file(file: str) -> str:
+    return str(Path(file).resolve())
 
 def get_default_filter():
     general_filter = Or(
@@ -238,14 +242,14 @@ def main():
 
     verbose = args.verbose
     if args.generate_modules:
-        create_module_class_map(args.modules_source)
+        create_module_class_map(resolve_file(args.modules_source))
     
     Loader.initialize(scorer=DefaultScorer())
     if args.no_filter:
         filter = EmptyFilter()
     else:
         try:
-            filter = from_json_file(args.filter_source)
+            filter = from_json_file(resolve_file(args.filter_source))
         except:
             print("Could not load filter. Using a custom default.")
             filter = get_default_filter()
@@ -275,25 +279,25 @@ def main():
             )
         )
     if args.generate_dependencies:
-        create_dependencies(args.output_file or Settings.DEPENDENCIES_JSON)
+        create_dependencies(resolve_file(args.output_file) or Settings.DEPENDENCIES_JSON)
     if args.generate_imports:
-        create_import_map(args.output_file or Settings.IMPORT_MAP_SRC)
+        create_import_map(resolve_file(args.output_file) or Settings.IMPORT_MAP_SRC)
     if args.generate_graph:
-        generate_graph(args.graph_source, filter=filter)
+        generate_graph(resolve_file(args.graph_source), filter=filter)
     if args.generate_dependency_graph:
         generate_tree(
             args.generate_dependency_graph[0], 
             args.generate_dependency_graph[1], 
             args.generate_dependency_graph[2],
-            args.graph_source or Settings.GRAPH_DIR/"dep-graph.json"
+            resolve_file(args.graph_source)
         )
 
     if args.show_view:
-        threading.Thread(target=open_browser, daemon=True, args=[args.graph_source]).start()
+        threading.Thread(target=open_browser, daemon=True, args=[resolve_file(args.graph_source)]).start()
         run_server()
 
     if args.output_file:
-        with open(Path(__file__).parent/args.output_file, "w+") as f:
+        with open(resolve_file(args.output_file), "w+") as f:
             f.write(str(result))
     else:
         print(result)

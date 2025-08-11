@@ -1,5 +1,6 @@
 import re
 import os
+from pathlib import Path
 from typing import List
 
 from sagedeps.constants import Settings
