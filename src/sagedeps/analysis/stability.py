@@ -2,7 +2,7 @@ from typing import List
 from sagedeps.deps.data import Data
 from sagedeps.deps.model.dependency import Relation
 from sagedeps.analysis.graph_analysis import GraphAnalyzer
-from sagedeps.deps.filter import Filter, PathFilter
+from sagedeps.deps.filter import Filter, EmptyFilter
 from sagedeps.deps.model.sageclass import SageClass
 
 import networkx as nx
@@ -10,7 +10,7 @@ import numpy as np
 from sknetwork.ranking import PageRank
 
 class StabilityAnalyzer(GraphAnalyzer):
-    def __init__(self, filter: Filter = PathFilter(), edge_types: List[Relation] | None = None):
+    def __init__(self, filter: Filter = EmptyFilter(), edge_types: List[Relation] | None = None):
         self._edge_types = edge_types
         self._classes = Data.get_classes_filtered(filter)
 

@@ -44,10 +44,9 @@ Relative and absolute files are both supported.
 
 ## Full options list
 
-```
 usage: sdeps [-h] [-s SOURCE_FILE] [-m SOURCE_FILE] [-g SOURCE_FILE] [-o OUTPUT_FILE] [-up SOURCE_CLASS DEPTH]
-             [-cc SOURCE_CLASS TIMEOUT] [-gm] [-gi] [-gd] [-gg] [-gdg SOURCE DISTANCE DIRECTION] [-f SOURCE_FILE] [-view]
-             [-set-config NAME VALUE] [--verbose]
+             [-cc SOURCE_CLASS TIMEOUT] [-cl SIZE] [-gm] [-gi] [-gd] [-gg] [-gdg SOURCE DISTANCE DIRECTION] [-f SOURCE_FILE] [-nf]
+             [-view] [-set-config NAME VALUE] [--verbose]
 
 A program top help manage SageMath dependencies.
 
@@ -65,6 +64,7 @@ options:
                         Generates a breadth-first dependency tree rooted at SOURCE_CLASS, up to a given depth.
   -cc SOURCE_CLASS TIMEOUT
                         Finds cycles starting at SOURCE_CLASS with a timeout of TIMEOUT seconds.
+  -cl SIZE              Finds cliques of size SIZE.
   -gm, --generate-modules
                         Generate a modules file. Will output to default location or `--modules-source`.
   -gi, --generate-imports
@@ -76,11 +76,14 @@ options:
   -gdg, --generate-dependency-graph SOURCE DISTANCE DIRECTION
                         Generate a dependency graph rooted at a SOURCE node.
   -f, --ff SOURCE_FILE  Load a custom filter. If not, a default filter is used.
+  -nf                   Disables the filter.
   -view, --view         Run a cytoscape.js instance. Specify graph source using `--graph-source`.
   -set-config NAME VALUE
                         Updates the configuration file.
   --verbose             Enable verbose output.
 ```
+
+Note: Currently, verbose output doesn't do anything.
 
 # Example Usage
 

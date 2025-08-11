@@ -1,7 +1,7 @@
 from typing import List
 from sagedeps.deps.data import Data
 from sagedeps.analysis.graph_analysis import GraphAnalyzer
-from sagedeps.deps.filter import Filter, PathFilter
+from sagedeps.deps.filter import Filter, EmptyFilter
 from sagedeps.deps.model.sageclass import SageClass
 
 
@@ -14,7 +14,7 @@ class DistanceAnalyzer(GraphAnalyzer):
             self, 
             starting_node: str,
             max_distance: int,
-            filter: Filter = PathFilter(),
+            filter: Filter = EmptyFilter(),
             edge_types: List[Relation] | None = None,
             edge_weights: List[int] | None = None,
             direction: str = "up"

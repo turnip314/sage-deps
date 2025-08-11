@@ -1,7 +1,7 @@
 from typing import List
 
 from sagedeps.analysis.graph_analysis import GraphAnalyzer
-from sagedeps.deps.filter import Filter, PathFilter
+from sagedeps.deps.filter import Filter, EmptyFilter
 from sagedeps.deps.model.sageclass import SageClass
 
 import networkx as nx
@@ -14,7 +14,7 @@ from sagedeps.deps.model.dependency import Relation
 class CliquesAnalyzer(GraphAnalyzer):
     def __init__(
             self, 
-            filter: Filter = PathFilter(),
+            filter: Filter = EmptyFilter(),
             size: int = 2,
             edge_types: List[Relation] | None = None
         ):

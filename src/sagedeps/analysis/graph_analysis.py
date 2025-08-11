@@ -1,7 +1,7 @@
 from typing import List
 
 from sagedeps.deps.data import Data
-from sagedeps.deps.filter import Filter, PathFilter
+from sagedeps.deps.filter import Filter, EmptyFilter
 from sagedeps.deps.model.sageclass import SageClass
 from sagedeps.deps.model.dependency import Relation
 import numpy as np
@@ -12,7 +12,7 @@ import networkx as nx
 class GraphAnalyzer:
     def __init__(
             self,
-            filter: Filter = PathFilter(),
+            filter: Filter = EmptyFilter(),
             weight_by_strength=True,
             edge_types: List[Relation] | None = None,
             weights = None

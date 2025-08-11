@@ -13,7 +13,9 @@ from sagedeps.deps.parser import Parser
 from sagedeps.deps.loader import Loader
 from sagedeps.deps.graphics import create_class_digraph, create_module_digraph, create_graph_json
 from sagedeps.deps.score import DefaultScorer
-from sagedeps.deps.filter import PathFilter, MinFanIn, MinFanOut, Or, Not, NameContains, Balance, DistanceFilter, from_json_file
+from sagedeps.deps.filter import (
+    EmptyFilter, PathFilter, MinFanIn, MinFanOut, Or, Not, NameContains, Balance, DistanceFilter, from_json_file
+)
 from sagedeps.deps.data import Data
 
 httpd = None
@@ -101,7 +103,16 @@ def run_server():
     print("Launching cytoscape viewer...")
     httpd.serve_forever()
 
-def open_browser(file="graph.json"):
+def open_browser(file=str(Path(__file__).parent/"graphics"/"graph.json")):
+    path = Path(file)
+    if path.is_relative_to(Settings.GRAPH_DIR):
+        file = str(path.relative_to(Settings.GRAPH_DIR))
+    else:
+        with open(file, "r") as f:
+            contents = f.read()
+        file = "tmpfile.json"
+        with open(Settings.GRAPH_DIR/file, "w") as f:
+            f.write(contents)
     time.sleep(1)
     webbrowser.open(f"http://localhost:8100/index.html?file={file}")
 
@@ -153,6 +164,12 @@ def main():
         help="Finds cycles starting at SOURCE_CLASS with a timeout of TIMEOUT seconds."
     )
     parser.add_argument(
+        "-cl", 
+        metavar="SIZE",
+        dest="check_cliques",
+        help="Finds cliques of size SIZE."
+    )
+    parser.add_argument(
         "-gm", "--generate-modules",
         action="store_true",
         dest="generate_modules", 
@@ -191,6 +208,12 @@ def main():
         help="Load a custom filter. If not, a default filter is used."
     )
     parser.add_argument(
+        "-nf",
+        dest="no_filter",
+        action="store_true",
+        help="Disables the filter."
+    )
+    parser.add_argument(
         "-view", "--view",
         action="store_true",
         dest="show_view",
@@ -218,11 +241,14 @@ def main():
         create_module_class_map(args.modules_source)
     
     Loader.initialize(scorer=DefaultScorer())
-    try:
-        filter = from_json_file(args.filter_source)
-    except:
-        print("Could not load filter. Using a custom default.")
-        filter = get_default_filter()
+    if args.no_filter:
+        filter = EmptyFilter()
+    else:
+        try:
+            filter = from_json_file(args.filter_source)
+        except:
+            print("Could not load filter. Using a custom default.")
+            filter = get_default_filter()
 
     if args.up_dependency:
         source = args.up_dependency[0]
@@ -235,8 +261,17 @@ def main():
         timeout = int(args.check_cycles[1])
         result = run_graph_analysis(
             CyclesAnalyzer(
-            start_node=Data.get_class(source), 
-            time_limit = timeout
+                filter=filter,
+                start_node=Data.get_class(source), 
+                time_limit = timeout
+            )
+        )
+    if args.check_cliques:
+        size = int(args.check_cliques)
+        result = run_graph_analysis(
+            CliquesAnalyzer(
+                filter=filter,
+                size=size
             )
         )
     if args.generate_dependencies:
