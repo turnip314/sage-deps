@@ -67,6 +67,9 @@ def create_module_digraph(filter: Filter, relations: List[Relation]):
 def create_graph_json(
     filter: Filter
 ):
+    """
+    Generate a json compatible with cytoscape.js.
+    """
     result = {
         "elements": {
             "nodes": [],

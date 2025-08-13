@@ -23,6 +23,11 @@ class Parser:
 
     @classmethod
     def create_python_module_class_map(cls, python=True, cython=True, list_symbols=True):
+        """
+        Main function for generating the modules.json file. Walks through the SageMath codebase
+        and parses each .py and .pyx file it finds to extract information about its classes
+        and imports.
+        """
         module_class_map = {}
         for dirpath, _, filenames in os.walk(Settings.SAGE_SRC):
             for filename in filenames:
@@ -77,6 +82,9 @@ class Parser:
 
     @classmethod
     def parse_cython(cls, file_path: str, cython_header: str | None = None):
+        """
+        Utility function for parsing Cython (.pyx) files using regex.
+        """
         results = {
             # {kind: str, name: str, line: int, functions: list, imports: list, attributes: list, symbols: list}
             "classes": [],          
@@ -187,6 +195,9 @@ class Parser:
     
     @classmethod
     def parse_python(cls, file_path: str):
+        """
+        Utility function for parsing Python (.py) files using the ast library.
+        """
         results = {
             # {kind: str, name: str, line: int, functions: list, imports: list, attributes: list}
             "classes": [],         
@@ -384,6 +395,10 @@ class Parser:
 
     @classmethod
     def get_full_name(cls, node):
+        """
+        Subroutine used for Python ast parsing. Gets the full name of an item
+        relative to the file it's being used (for example, module.classname).
+        """
         if isinstance(node, ast.Name):
             return node.id
         elif isinstance(node, ast.Attribute):
@@ -395,6 +410,10 @@ class Parser:
     
     @classmethod
     def extract_inheritance_from_cython(cls, line: str):
+        """
+        Get inheritance behaviour from cython.
+        TODO: check if this is needed.
+        """
         results = []
         class_pattern = re.compile(r"^\s*(cdef\s+)?class\s+(\w+)\s*\((.*?)\)\s*:")
         match = class_pattern.match(line)
@@ -408,6 +427,9 @@ class Parser:
     
     @classmethod
     def extract_attributes_from_python(cls, class_node):
+        """
+        Get class attributes of a Python class.
+        """
         attr_classes = []
 
         for node in ast.walk(class_node):
@@ -427,6 +449,9 @@ class Parser:
     
     @classmethod
     def extract_top_level_instantiations_py(cls, tree):
+        """
+        Helper function for python to get global variable instantiations.
+        """
         assignments = []
 
         for node in tree.body:

@@ -1,12 +1,12 @@
 from pydriller import Repository, ModificationType
 
-from constants import *
+from constants import Settings
 import json
 
-repo_url = SAGE_BASE
+repo_url = Settings.SAGE_BASE
 
 def dump_commit_history():
-    with open(COMMIT_HISTORY, "w") as out_file:
+    with open(Settings.COMMIT_HISTORY, "w") as out_file:
         for i, commit in enumerate(Repository(
             repo_url,
             only_in_branch='develop',
@@ -65,7 +65,7 @@ def get_file_update_metadata():
                     "created": commit.committer_date.strftime("%Y-%m-%d")
                 }
 
-    with open(COMMIT_METADATA, "w") as out_file:
+    with open(Settings.COMMIT_METADATA, "w") as out_file:
         out_file.write(json.dumps(data))
 
 if __name__ == "__main__":

@@ -1,6 +1,5 @@
 import functools
 import json
-import os
 import threading
 import time
 import webbrowser
