@@ -44,6 +44,7 @@ Relative and absolute files are both supported.
 
 ## Full options list
 
+```
 usage: sdeps [-h] [-s SOURCE_FILE] [-m SOURCE_FILE] [-g SOURCE_FILE] [-o OUTPUT_FILE] [-up SOURCE_CLASS DEPTH]
              [-cc SOURCE_CLASS TIMEOUT] [-cl SIZE] [-gm] [-gi] [-gd] [-gg] [-gdg SOURCE DISTANCE DIRECTION] [-f SOURCE_FILE] [-nf]
              [-view] [-set-config NAME VALUE] [--verbose]
